@@ -15,35 +15,57 @@ contract ProviderRegistry {
   event ProviderMinStakeUpdated(uint256 newStake);
 
   error StakeTooLow();
-  
-  /// @notice Returns provider struct by address
+
+  /**
+   * @notice Get provider data by its address
+   * @param addr Address of provider
+   * @return Provider struct
+   */
   function providerMap(address addr) public view returns (Provider memory) {
     return s.providerMap[addr];
   }
 
-  /// @notice Returns provider address by index
+  /**
+   * @notice Get address of provider by its index in array
+   * @param index Index of array
+   * @return Address of corresponding provider
+   */
   function providers(uint256 index) public view returns (address) {
     return s.providers[index];
   }
 
-  /// @notice Returns active (undeleted) provider IDs
+  /**
+   * @notice Get addresses of all active provider
+   * @return Array of addresses
+   */
   function providerGetIds() public view returns (address[] memory) {
     return s.activeProviders.keys();
   }
 
-  /// @notice Returns count of active providers
+  /**
+   * @notice Get count of active providers
+   * @return count Active providers count
+   */
   function providerGetCount() public view returns (uint count) {
     return s.activeProviders.count();
   }
-  
-  /// @notice Returns provider by index
+
+  /**
+   * @notice Get provider's address and struct by its index in array of provider
+   * @param index Array index
+   * @return addr Provider's address
+   * @return provider Provider struct
+   */
   function providerGetByIndex(uint index) public view returns (address addr, Provider memory provider) {
     addr = s.activeProviders.keyAtIndex(index);
     return (addr, s.providerMap[addr]);
   }
 
-  
-  /// @notice Returns all providers
+  /**
+   * @notice Get all addresses of providers and structs corresponding to them
+   * @return Array of addresses
+   * @return Array of provider structs
+   */
   function providerGetAll() public view returns (address[] memory, Provider[] memory) {
     uint256 count = s.activeProviders.count();
     address[] memory _addrs = new address[](count);
@@ -58,10 +80,13 @@ contract ProviderRegistry {
     return (_addrs, _providers);
   }
 
-  /// @notice Registers a provider
-  /// @param   addr      provider address
-  /// @param   addStake  amount of stake to add
-  /// @param   endpoint  provider endpoint (host.com:1234)
+  /**
+   * @notice Registers a provider. Only callable for sender or contract owner
+   * @dev Emits {ProviderRegisteredUpdated}
+   * @param addr Provider address
+   * @param addStake Amount of tokens to stake
+   * @param endpoint Provider's endpoint (host.com:1234)
+   */
   function providerRegister(address addr, uint256 addStake, string memory endpoint) public {
     LibOwner._senderOrOwner(addr);
     Provider memory provider = s.providerMap[addr];
@@ -80,8 +105,12 @@ contract ProviderRegistry {
 
     s.token.transferFrom(msg.sender, address(this), addStake); // reverts with ERC20InsufficientAllowance
   }
-  
-  /// @notice Deregisters a provider
+
+  /**
+   * @notice Deregister provider and return staked tokens. Only callable for provider or contract owner
+   * @dev Emits {ProviderDeregistered}
+   * @param addr Address of provider to deregister
+   */
   function providerDeregister(address addr) public {
     LibOwner._senderOrOwner(addr);
     s.activeProviders.remove(addr);
@@ -93,19 +122,30 @@ contract ProviderRegistry {
     s.token.transfer(addr, stake);
   }
 
-  /// @notice Sets the minimum stake required for a provider
+  /**
+   * @notice Update minimal amount of token to stake for providers. Only callable for contract owner
+   * @dev Emits {ProviderMinStakeUpdated}
+   * @param _minStake New minimal stake
+   */
   function providerSetMinStake(uint256 _minStake) public {
     LibOwner._onlyOwner();
     s.providerMinStake = _minStake;
     emit ProviderMinStakeUpdated(_minStake);
   }
-  
-  /// @notice Checks if a provider exists (is active / not deleted)
+
+  /**
+   * @notice Check if provider exists
+   * @param addr Address of provider to check
+   * @return True if exists otherwise false
+   */
   function providrerExists(address addr) public view returns (bool) {
     return s.activeProviders.exists(addr);
   }
 
-  /// @notice Returns the minimum stake required for a provider
+  /**
+   * @notice Get current minimal stake required for provider
+   * @return Minimal stake
+   */
   function providerMinStake() public view returns (uint256) {
     return s.providerMinStake;
   }

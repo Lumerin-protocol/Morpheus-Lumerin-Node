@@ -39,10 +39,18 @@ contract AgentRegistry is OwnableUpgradeable {
     __Ownable_init();
   }
 
+  /**
+   * @notice Get IDs of all registered agents
+   * @return Bytes32 array containing all ids
+   */
   function getIds() public view returns (bytes32[] memory) {
     return set.keys();
   }
 
+  /**
+   * @notice Get all registered agents
+   * @return Array of Agent structs
+   */
   function getAll() public view returns (Agent[] memory) {
     Agent[] memory _agents = new Agent[](set.count());
     for (uint i = 0; i < set.count(); i++) {
@@ -51,11 +59,25 @@ contract AgentRegistry is OwnableUpgradeable {
     return _agents;
   }
 
+  /**
+   * @notice Check if agent with corresponding id exists
+   * @param id Id of agent to check
+   * @return True if exists otherwise false
+   */
   function exists(bytes32 id) public view returns (bool) {
     return set.exists(id);
   }
 
-  // registers new or updates existing
+  /**
+   * @notice Update agent in registry. Only callable for sender or contract owner
+   * @dev Emits {RegisteredUpdated}
+   * @param addStake Amount to stake associated with this agent. Can't be less than `minStake`
+   * @param fee Fee associated with this agent
+   * @param owner Owner of agent
+   * @param agentId Agent's id in bytes32
+   * @param name Agent's name
+   * @param tags Array of tags
+   */
   function register(
     uint256 addStake,
     uint256 fee,
@@ -90,6 +112,11 @@ contract AgentRegistry is OwnableUpgradeable {
     token.transferFrom(_msgSender(), address(this), addStake); // reverts with ERC20InsufficientAllowance
   }
 
+  /**
+   * @notice Remove agent from registry and returns staked tokens. Only callable for agent or contract owner
+   * @dev Emits {Deregistered}
+   * @param id Id of agent to deregister
+   */
   // avoid loop this by using pointer pattern
   function deregister(bytes32 id) public {
     address owner = map[id].owner;
@@ -103,6 +130,11 @@ contract AgentRegistry is OwnableUpgradeable {
     token.transfer(owner, stake);
   }
 
+  /**
+   * @notice Update minimal stake. Only callable for contract owner
+   * @dev Emits {MinStakeUpdated}
+   * @param _minStake New minimal stake
+   */
   function setMinStake(uint256 _minStake) public onlyOwner {
     minStake = _minStake;
     emit MinStakeUpdated(minStake);

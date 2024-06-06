@@ -17,29 +17,45 @@ contract ModelRegistry {
   error ModelNotFound();
   error StakeTooLow();
 
-  /// @notice Returns model struct by id
+  /**
+   * @notice Get model by its Id
+   * @param id Id of model to get
+   * @return Struct of model
+   */
   function modelMap(bytes32 id) public view returns (Model memory) {
     return s.modelMap[id];
   }
 
-  /// @notice Returns model id by index
+  /**
+   * @notice Get model id by key array index
+   * @param index Array index
+   * @return Corresponding model id
+   */
   function models(uint256 index) public view returns (bytes32) {
     return s.models[index];
   }
 
-  /// @notice Returns active (undeleted) model IDs
+  /**
+   * @notice Get keys of all current active models
+   * @return Bytes32 array of ids
+   */
   function modelGetIds() public view returns (bytes32[] memory) {
     return s.activeModels.keys();
   }
 
-  /// @notice Returns count of active models
+  /**
+   * @notice Get count of active models
+   * @return count Active models count
+   */
   function modelGetCount() public view returns (uint count) {
     return s.activeModels.count();
   }
 
-  /// @notice Returns all models
-  /// @return ids    array of model ids
-  /// @return models array of model structs
+  /**
+   * @notice Get all ids and models corresponding to them
+   * @return Array of model ids
+   * @return Array of model structs
+   */
   function modelGetAll() public view returns (bytes32[] memory, Model[] memory) {
     uint256 len = s.activeModels.count();
     Model[] memory _models = new Model[](len);
@@ -52,18 +68,37 @@ contract ModelRegistry {
     return (ids, _models);
   }
 
-  /// @notice Returns active model struct by index
+  /**
+   * @notice Get id and struct of model by key array index
+   * @param index Index of key array
+   * @return modelId Id of corresponding model
+   * @return model Struct of corresponding model
+   */
   function modelGetByIndex(uint index) public view returns (bytes32 modelId, Model memory model) {
     modelId = s.activeModels.keyAtIndex(index);
     return (modelId, s.modelMap[modelId]);
   }
 
-  /// @notice Checks if model exists
+  /**
+   * @notice Check if model with corresponding id exists
+   * @param id Id of model to check
+   * @return True if model exists otherwise false
+   */
   function modelExists(bytes32 id) public view returns (bool) {
     return s.activeModels.exists(id);
   }
 
-  /// @notice Registers or updates existing model
+  /**
+   * @notice Update model in registry. Only callable for sender or owner
+   * @dev Emits {ModelRegisteredUpdated}
+   * @param modelId Model's id in bytes32
+   * @param ipfsCID IPFS storage CID in bytes32 (https://docs.ipfs.tech/concepts/content-addressing/#what-is-a-cid)
+   * @param fee Fee associated with this model
+   * @param addStake Amount to stake associated with this agent. Can't be less than `minStake`
+   * @param owner Owner of model
+   * @param name Model's name
+   * @param tags Array of tags
+   */
   function modelRegister(
     bytes32 modelId,
     bytes32 ipfsCID,
@@ -101,7 +136,11 @@ contract ModelRegistry {
     s.token.transferFrom(msg.sender, address(this), addStake); // reverts with ERC20InsufficientAllowance()
   }
 
-  /// @notice Deregisters a model
+  /**
+   * @notice Deregister model and return staked tokens. Only callable for model or contract owner
+   * @dev Emits {ModelDeregistered}
+   * @param id Id of model to deregister
+   */
   function modelDeregister(bytes32 id) public {
     Model storage model = s.modelMap[id];
     LibOwner._senderOrOwner(model.owner);
@@ -114,14 +153,21 @@ contract ModelRegistry {
     s.token.transfer(model.owner, stake);
   }
 
-  /// @notice Sets the minimum stake required for a model
+  /**
+   * @notice Update minimal stake. Only callable for contract owner
+   * @dev Emits {ModelMinStakeUpdated}
+   * @param _minStake New minimal stake
+   */
   function modelSetMinStake(uint256 _minStake) public {
     LibOwner._onlyOwner();
     s.modelMinStake = _minStake;
     emit ModelMinStakeUpdated(s.modelMinStake);
   }
 
-  /// @notice Returns the minimum stake required for a model
+  /**
+   * @notice Get minimal stake for model
+   * @return Minimal stake
+   */
   function modelMinStake() public view returns (uint256) {
     return s.modelMinStake;
   }
