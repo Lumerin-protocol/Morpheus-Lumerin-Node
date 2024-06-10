@@ -30,7 +30,7 @@ func NewAiEngine() *AiEngine {
 
 type CompletionCallback func(completion api.ChatCompletionStreamResponse) error
 
-func requestChatCompletionStream(ctx context.Context, request *api.ChatCompletionRequest, callback CompletionCallback) (*api.ChatCompletionStreamResponse, error) {
+func RequestChatCompletionStream(ctx context.Context, request *api.ChatCompletionRequest, callback CompletionCallback) (*api.ChatCompletionStreamResponse, error) {
 	requestBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %v", err)
@@ -122,12 +122,12 @@ func (aiEngine *AiEngine) PromptStream(ctx context.Context, req interface{}, chu
 	request := req.(*api.ChatCompletionRequest)
 	chunkCallback := chunkSubmitCallback.(func(*api.ChatCompletionStreamResponse) error)
 
-	resp, err := requestChatCompletionStream(ctx, request, func(completion api.ChatCompletionStreamResponse) error {
+	resp, err := RequestChatCompletionStream(ctx, request, func(completion api.ChatCompletionStreamResponse) error {
 		return chunkCallback(&completion)
 	})
 
 	if err != nil {
-		fmt.Printf("ChatCompletion error: %v\n", err)
+		fmt.Printf("Stream ChatCompletion error: %v\n", err)
 		return nil, err
 	}
 

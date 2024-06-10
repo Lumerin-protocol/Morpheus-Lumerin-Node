@@ -6,10 +6,11 @@ const { expect } = chai
 const modelName = 'llama2:latest'
 const config = {
 
-  modelUrl: 'http://localhost:8082/v1',
+  modelUrl: 'http://localhost:8080/v1',
   // modelUrl: "http://localhost:11434/v1",
   modelName: modelName,
 }
+
 // TODO: fix other tests so they can be run reliably
 describe.only('test ollama', function () {
   this.timeout(20000)

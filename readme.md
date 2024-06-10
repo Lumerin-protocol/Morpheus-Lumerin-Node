@@ -34,7 +34,7 @@ The steps listed below are for both the Consumer and Provider to get started wit
 1. PreRequisites: 
     1. Have Mnemonic and Private key for a Consumer Wallet (Suggest setting one up in MetaMask so you can pull the mnemonic and private key) 
     2. Obtain or Transfer saMOR and saETH to this wallet for testing (suggest 1000 saMOR and at least 0.1 saETH) - Sepolia Arbitrum Chain 
-2. Download latest release for your operating system: https://github.com/Lumerin-protocol/Morpheus-Lumerin-Node/releases
+2. Download latest release for your operating system: https://github.com/MorpheusAIs/Morpheus-Lumerin-Node/releases
 3. Extract the zip to a local folder (examples)
     * Windows: `(%USERPROFILE%)/Downloads/morpheus)` 
     * Linux & MacOS: `~/Downloads/morpheus`

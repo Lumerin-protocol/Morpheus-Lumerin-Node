@@ -6,10 +6,12 @@ services:
     env_file:
       - ./proxy-router/.env
     ports:
-      - 8082:8082
+      - 8080:8080
       - 3333:3333
     depends_on:
       - ollama
+    volumes:
+      - ./proxy-router/logs:/app/logs
   ollama:
     image: ollama/ollama
     container_name: ollama

@@ -46,7 +46,6 @@ const chain = {
     'https://gitbook.lumerin.io/lumerin-hashpower-marketplace/buyer/2.-network-changes-for-receiving-hashrate',
 
   localProxyRouterUrl: `http://localhost:${process.env.PROXY_WEB_DEFAULT_PORT || 8082}`,
-  diamondAddress: process.env.DIAMOND_ADDRESS,
 
   faucetUrl: process.env.FAUCET_URL,
   showFaucet: process.env.SHOW_FAUCET === 'true',

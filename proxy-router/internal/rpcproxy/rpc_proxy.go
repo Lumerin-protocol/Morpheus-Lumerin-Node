@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -64,6 +65,8 @@ func (rpcProxy *RpcProxy) GetLatestBlock(ctx context.Context) (uint64, error) {
 
 func (rpcProxy *RpcProxy) GetAllProviders(ctx context.Context) (int, gin.H) {
 	addrs, providers, err := rpcProxy.providerRegistry.GetAllProviders(ctx)
+
+	fmt.Println("provider registry results - addrs: ", addrs, " providers: ", providers, " err: ", err)
 	if err != nil {
 		return constants.HTTP_STATUS_BAD_REQUEST, gin.H{"error": err.Error()}
 	}
@@ -80,6 +83,15 @@ func (rpcProxy *RpcProxy) GetAllProviders(ctx context.Context) (int, gin.H) {
 	}
 
 	return constants.HTTP_STATUS_OK, gin.H{"providers": result}
+}
+
+func (rpcProxy *RpcProxy) CreateNewProvider(ctx context.Context, address string, addStake uint64, endpoint string) (int, gin.H) {	
+	fmt.Println("CreateNewProvider address: ", address, " addStake: ", addStake, " endpoint: ", endpoint)
+	err := rpcProxy.providerRegistry.CreateNewProvider(ctx, address, addStake, endpoint)
+	if err != nil {
+		return constants.HTTP_STATUS_BAD_REQUEST, gin.H{"error": err.Error()}
+	}
+	return constants.HTTP_STATUS_OK, gin.H{"success": true}
 }
 
 func (rpcProxy *RpcProxy) GetAllModels(ctx context.Context) (int, gin.H) {

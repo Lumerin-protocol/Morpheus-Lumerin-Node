@@ -49,7 +49,7 @@ func TestAiEngine_PromptStream(t *testing.T) {
 
 	choices := make([]api.ChatCompletionStreamChoice, 0)
 
-	resp, err := requestChatCompletionStream(ctx, req, func(response api.ChatCompletionStreamResponse) error {
+	resp, err := RequestChatCompletionStream(ctx, req, func(response api.ChatCompletionStreamResponse) error {
 		choices = append(choices, response.Choices...)
 
 		if response.Choices[0].Delta.Content == "" {

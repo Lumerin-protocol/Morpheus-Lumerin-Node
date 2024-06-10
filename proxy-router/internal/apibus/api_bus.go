@@ -111,8 +111,14 @@ func (apiBus *ApiBus) GetLatestBlock(ctx context.Context) (uint64, error) {
 //		@Produce		json
 //		@Success		200	{object}	interface{}
 //		@Router			/blockchain/balance [get]
-func (apiBus *ApiBus) GetBalance(ctx *gin.Context) (int, gin.H) {
-	return apiBus.rpcProxy.GetBalance(ctx)
+func (apiBus *ApiBus) GetBalance(ctx context.Context) (int, gin.H) {
+	apiContext, ok :=  ctx.(*gin.Context)
+
+	if !ok {
+		return 500, gin.H{"error": "invalid context"}
+	}
+	
+	return apiBus.rpcProxy.GetBalance(apiContext)
 }
 
 // GetAllowance godoc
@@ -152,6 +158,10 @@ func (apiBus *ApiBus) Approve(ctx *gin.Context) (int, gin.H) {
 //		@Router			/blockchain/providers [get]
 func (apiBus *ApiBus) GetAllProviders(ctx context.Context) (int, gin.H) {
 	return apiBus.rpcProxy.GetAllProviders(ctx)
+}
+
+func (apiBus *ApiBus) CreateNewProvider(ctx context.Context, address string, addStake uint64, endpoint string) (int, gin.H) {
+	return apiBus.rpcProxy.CreateNewProvider(ctx, address, addStake, endpoint)
 }
 
 // GetModels godoc
@@ -352,8 +362,6 @@ func (apiBus *ApiBus) PromptLocal(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	req.Stream = ctx.GetHeader("Accept") == "application/json"
 
 	var response interface{}
 

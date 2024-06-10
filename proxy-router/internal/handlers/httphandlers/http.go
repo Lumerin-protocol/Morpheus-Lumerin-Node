@@ -54,6 +54,7 @@ func NewHTTPHandler(apiBus *apibus.ApiBus) *gin.Engine {
 	}))
 	r.GET("/files", (func(ctx *gin.Context) {
 		status, files := apiBus.GetFiles(ctx)
+		
 		ctx.JSON(status, files)
 	}))
 	r.POST("/v1/chat/completions", (func(ctx *gin.Context) {
@@ -84,6 +85,16 @@ func NewHTTPHandler(apiBus *apibus.ApiBus) *gin.Engine {
 	r.GET("/blockchain/providers", (func(ctx *gin.Context) {
 		status, providers := apiBus.GetAllProviders(ctx)
 		ctx.JSON(status, providers)
+	}))
+
+	r.POST("/blockchain/providers", (func(ctx *gin.Context) {
+		address := ctx.GetString("address")
+		addStake := ctx.GetUint64("addStake")
+		endpoint := ctx.GetString("endpoint")
+
+		status, response := apiBus.CreateNewProvider(ctx, address, addStake, endpoint)
+
+		ctx.JSON(status, response)
 	}))
 
 	r.POST("/blockchain/send/eth", (func(ctx *gin.Context) {

@@ -208,7 +208,7 @@ func (p *ProxyRouterApi) GetFiles(ctx *gin.Context) (int, gin.H) {
 		if err != nil {
 			fmt.Fprintf(ctx.Writer, "failed to marshal system config: %s\n", err)
 		} else {
-			fmt.Fprintf(ctx.Writer, "system config: %s\n", json)
+			fmt.Fprintf(ctx.Writer, "%s\n", json)
 		}
 	}
 	fmt.Fprintf(ctx.Writer, "\n")
