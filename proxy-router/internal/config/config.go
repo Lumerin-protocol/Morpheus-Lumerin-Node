@@ -90,8 +90,6 @@ func (cfg *Config) SetDefaults() {
 
 	// System
 
-	// cfg.System.Enable = true // TODO: Temporary override, remove this line
-
 	if cfg.System.LocalPortRange == "" {
 		cfg.System.LocalPortRange = "1024 65535"
 	}

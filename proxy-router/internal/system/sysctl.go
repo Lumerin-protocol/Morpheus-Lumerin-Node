@@ -6,12 +6,19 @@ import (
 	"strings"
 )
 
-func sysctlSet(name string, value string) error {
+type SysctlCaller interface {
+	Get(name string) (string, error)
+	Set(name string, value string) error
+}
+
+type sysctl struct{}
+
+func (s *sysctl) Set(name string, value string) error {
 	_, err := run("sysctl", "-w", name+"="+value)
 	return err
 }
 
-func sysctlGet(name string) (string, error) {
+func (s *sysctl) Get(name string) (string, error) {
 	return run("sysctl", "-n", name)
 }
 

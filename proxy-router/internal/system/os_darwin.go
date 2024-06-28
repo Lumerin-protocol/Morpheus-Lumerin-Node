@@ -13,19 +13,22 @@ import (
 )
 
 type DarwinConfigurator struct {
+	sysctl SysctlCaller
 }
 
 func NewOSConfigurator() *DarwinConfigurator {
-	return &DarwinConfigurator{}
+	return &DarwinConfigurator{
+		sysctl: &sysctl{},
+	}
 }
 
 func (c *DarwinConfigurator) GetConfig() (*Config, error) {
 	cfg := &Config{}
-	portRangeFirst, err := sysctlGet("net.inet.ip.portrange.first")
+	portRangeFirst, err := c.sysctl.Get("net.inet.ip.portrange.first")
 	if err != nil {
 		return nil, err
 	}
-	portRangeLast, err := sysctlGet("net.inet.ip.portrange.last")
+	portRangeLast, err := c.sysctl.Get("net.inet.ip.portrange.last")
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +37,7 @@ func (c *DarwinConfigurator) GetConfig() (*Config, error) {
 
 	// net.ipv4.tcp_max_syn_backlog is not available on Darwin
 
-	somaxconn, err := sysctlGet("kern.ipc.somaxconn")
+	somaxconn, err := c.sysctl.Get("kern.ipc.somaxconn")
 	if err != nil {
 		return nil, err
 	}
@@ -56,18 +59,18 @@ func (c *DarwinConfigurator) GetConfig() (*Config, error) {
 
 func (c *DarwinConfigurator) ApplyConfig(cfg *Config) error {
 	rng := strings.Split(cfg.LocalPortRange, " ")
-	err := sysctlSet("net.inet.ip.portrange.first", rng[0])
+	err := c.sysctl.Set("net.inet.ip.portrange.first", rng[0])
 	if err != nil {
 		return err
 	}
-	err = sysctlSet("net.inet.ip.portrange.last", rng[1])
+	err = c.sysctl.Set("net.inet.ip.portrange.last", rng[1])
 	if err != nil {
 		return err
 	}
 
 	// net.ipv4.tcp_max_syn_backlog is not available on Darwin
 
-	err = sysctlSet("kern.ipc.somaxconn", cfg.Somaxconn)
+	err = c.sysctl.Set("kern.ipc.somaxconn", cfg.Somaxconn)
 	if err != nil {
 		return err
 	}

@@ -9,33 +9,36 @@ import (
 )
 
 type LinuxConfigurator struct {
+	sysctl SysctlCaller
 }
 
 func NewOSConfigurator() *LinuxConfigurator {
-	return &LinuxConfigurator{}
+	return &LinuxConfigurator{
+		sysctl: &sysctl{},
+	}
 }
 
 func (c *LinuxConfigurator) GetConfig() (*Config, error) {
 	cfg := &Config{}
-	localPortRange, err := sysctlGet("net.ipv4.ip_local_port_range")
+	localPortRange, err := c.sysctl.Get("net.ipv4.ip_local_port_range")
 	if err != nil {
 		return nil, err
 	}
 	cfg.LocalPortRange = localPortRange
 
-	tcpMaxSynBacklog, err := sysctlGet("net.ipv4.tcp_max_syn_backlog")
+	tcpMaxSynBacklog, err := c.sysctl.Get("net.ipv4.tcp_max_syn_backlog")
 	if err != nil {
 		return nil, err
 	}
 	cfg.TcpMaxSynBacklog = tcpMaxSynBacklog
 
-	somaxconn, err := sysctlGet("net.core.somaxconn")
+	somaxconn, err := c.sysctl.Get("net.core.somaxconn")
 	if err != nil {
 		return nil, err
 	}
 	cfg.Somaxconn = somaxconn
 
-	netdevMaxBacklog, err := sysctlGet("net.core.netdev_max_backlog")
+	netdevMaxBacklog, err := c.sysctl.Get("net.core.netdev_max_backlog")
 	if err != nil {
 		return nil, err
 	}
@@ -54,19 +57,19 @@ func (c *LinuxConfigurator) GetConfig() (*Config, error) {
 }
 
 func (c *LinuxConfigurator) ApplyConfig(cfg *Config) error {
-	err := sysctlSet("net.ipv4.ip_local_port_range", cfg.LocalPortRange)
+	err := c.sysctl.Set("net.ipv4.ip_local_port_range", cfg.LocalPortRange)
 	if err != nil {
 		return err
 	}
-	err = sysctlSet("net.ipv4.tcp_max_syn_backlog", cfg.TcpMaxSynBacklog)
+	err = c.sysctl.Set("net.ipv4.tcp_max_syn_backlog", cfg.TcpMaxSynBacklog)
 	if err != nil {
 		return err
 	}
-	err = sysctlSet("net.core.somaxconn", cfg.Somaxconn)
+	err = c.sysctl.Set("net.core.somaxconn", cfg.Somaxconn)
 	if err != nil {
 		return err
 	}
-	err = sysctlSet("net.core.netdev_max_backlog", cfg.NetdevMaxBacklog)
+	err = c.sysctl.Set("net.core.netdev_max_backlog", cfg.NetdevMaxBacklog)
 	if err != nil {
 		return err
 	}
