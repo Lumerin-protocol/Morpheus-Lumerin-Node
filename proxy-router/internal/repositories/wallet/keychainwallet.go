@@ -36,36 +36,32 @@ func NewKeychainWallet() *KeychainWallet {
 // GetPrivateKey use this function to get the private key regardless of whether it was stored as a mnemonic or private key
 //
 // errors with ErrPkeyAndMnemonic if both mnemonic and private key are stored
-func (w *KeychainWallet) GetPrivateKey() (string, error) {
+func (w *KeychainWallet) GetPrivateKey() (lib.HexString, error) {
 	prKey, prKeyErr := w.getStoredPrivateKey()
 	mnem, derivation, mnemErr := w.getStoredMnemonic()
 
-	if prKey != "" && mnem != "" {
-		return "", errors.New("both mnemonic and private key are stored")
+	if prKey != nil && mnem != "" {
+		return nil, errors.New("both mnemonic and private key are stored")
 	}
 
-	if prKey != "" {
-		return lib.RemoveHexPrefix(prKey), prKeyErr
+	if prKey != nil {
+		return prKey, nil
 	}
 
 	if mnem != "" && derivation != "" {
 		wallet, err := hdwallet.NewFromMnemonic(mnem)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		path, err := hdwallet.ParseDerivationPath(derivation)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		account, err := wallet.Derive(path, true)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		privateKey, err := wallet.PrivateKeyHex(account)
-		if err != nil {
-			return "", err
-		}
-		return lib.RemoveHexPrefix(privateKey), nil
+		return wallet.PrivateKeyBytes(account)
 	}
 
 	var err error
@@ -77,12 +73,12 @@ func (w *KeychainWallet) GetPrivateKey() (string, error) {
 		err = lib.WrapError(err, prKeyErr)
 	}
 
-	return "", err
+	return nil, err
 }
 
 // SetPrivateKey stores the private key of the wallet
-func (w *KeychainWallet) SetPrivateKey(privateKeyOxHex string) error {
-	err := w.storage.Upsert(PRIVATE_KEY_KEY, privateKeyOxHex)
+func (w *KeychainWallet) SetPrivateKey(privateKey lib.HexString) error {
+	err := w.storage.Upsert(PRIVATE_KEY_KEY, privateKey.Hex())
 	if err != nil {
 		return err
 	}
@@ -127,8 +123,12 @@ func (w *KeychainWallet) SetMnemonic(mnemonic string, derivationPath string) err
 }
 
 // getStoredPrivateKey retrieves the private key of the wallet
-func (w *KeychainWallet) getStoredPrivateKey() (string, error) {
-	return w.storage.Get(PRIVATE_KEY_KEY)
+func (w *KeychainWallet) getStoredPrivateKey() (lib.HexString, error) {
+	prKey, err := w.storage.Get(PRIVATE_KEY_KEY)
+	if err != nil {
+		return nil, err
+	}
+	return lib.StringToHexString(prKey)
 }
 
 // getStoredMnemonic retrieves the mnemonic of the wallet

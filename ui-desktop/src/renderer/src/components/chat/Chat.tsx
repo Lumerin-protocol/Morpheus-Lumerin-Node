@@ -118,11 +118,11 @@ const Chat = (props) => {
         }
     }
 
-    const onOpenSession = async ({ stake }) => {
-        console.log("open-session", stake);
+    const onOpenSession = async ({ duration }) => {
+        console.log("open-session", duration);
 
         try {
-            const openedSession = await props.onOpenSession({ stake, selectedBid });
+            const openedSession = await props.onOpenSession({ selectedBid, duration });
             if (!openedSession) {
                 return;
             }

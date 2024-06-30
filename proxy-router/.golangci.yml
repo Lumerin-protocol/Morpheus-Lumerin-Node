@@ -9,5 +9,5 @@ linters:
     # - misspell
     # - govet
 run:
-  deadline: 5m
   timeout: 5m
+

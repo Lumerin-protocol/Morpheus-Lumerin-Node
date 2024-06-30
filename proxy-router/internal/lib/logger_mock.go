@@ -1,7 +1,6 @@
 package lib
 
 import (
-	i "github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -33,7 +32,7 @@ func (l *LoggerMock) Fatalw(template string, args ...interface{})  {}
 
 func (l *LoggerMock) Log(lvl zapcore.Level, msg string, fields ...zapcore.Field) {}
 
-func (l *LoggerMock) Sync() error                        { return nil }
-func (l *LoggerMock) Close() error                       { return nil }
-func (l *LoggerMock) Named(n string) i.ILogger           { return l }
-func (l *LoggerMock) With(args ...interface{}) i.ILogger { return l }
+func (l *LoggerMock) Sync() error                      { return nil }
+func (l *LoggerMock) Close() error                     { return nil }
+func (l *LoggerMock) Named(n string) ILogger           { return l }
+func (l *LoggerMock) With(args ...interface{}) ILogger { return l }

@@ -8,16 +8,16 @@ import (
 	"net/netip"
 	"sync"
 
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 )
 
 type TCPServer struct {
 	serverAddr string
 	handler    Handler
-	log        interfaces.ILogger
+	log        lib.ILogger
 }
 
-func NewTCPServer(serverAddr string, log interfaces.ILogger) *TCPServer {
+func NewTCPServer(serverAddr string, log lib.ILogger) *TCPServer {
 	return &TCPServer{
 		serverAddr: serverAddr,
 		log:        log,

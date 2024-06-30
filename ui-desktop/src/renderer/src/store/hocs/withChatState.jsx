@@ -102,22 +102,16 @@ const withChatState = WrappedComponent => {
       }
     }
 
-    onOpenSession = async ({ selectedBid, stake }) => {
-      console.log("open-session", stake);
+    onOpenSession = async ({ selectedBid, duration }) => {
       this.context.toast('info', 'Processing...');
-      let signature = {};
       let sessionId = '';
 
       const bidId = selectedBid.Id;
 
       try {
-        const path = `${this.props.config.chain.localProxyRouterUrl}/proxy/sessions/initiate`;
+        const path = `${this.props.config.chain.localProxyRouterUrl}/blockchain/bids/${bidId}/session`;
         const body = {
-          user: this.props.address,
-          provider: selectedBid.Provider,
-          spend: Number(stake),
-          bidId,
-          providerUrl: selectedBid.ProviderData.Endpoint.replace("http://", "")
+          sessionDuration: +duration * 60 // convert to seconds
         };
         const response = await fetch(path, {
           method: "POST",
@@ -125,63 +119,20 @@ const withChatState = WrappedComponent => {
         });
         const dataResponse = await response.json();
         if (!response.ok) {
-          this.context.toast('error', 'Failed to initiate session');
+          this.context.toast('error', 'Failed to open session');
           console.log("Failed initiate session", dataResponse);
-          return;
-        }
-        signature = dataResponse.response.result;
-      }
-      catch (e) {
-        console.error(e);
-        this.context.toast('error', 'Failed to initiate session');
-        return;
-      }
-
-      try {
-        const path = `${this.props.config.chain.localProxyRouterUrl}/blockchain/approve?amount=${BigInt(stake).toString()}&spender=${this.props.config.chain.diamondAddress}`;
-        const response = await fetch(path, {
-          method: "POST",
-        });
-        const dataResponse = await response.json();
-        if (!response.ok) {
-          this.context.toast('error', 'Failed to increase allowance');
-          console.log("Failed to increase allowance", dataResponse);
-          return;
-        }
-      }
-      catch (e) {
-        console.error(e);
-        this.context.toast('error', 'Failed to increase allowance');
-        return;
-      }
-
-      try {
-        const path = `${this.props.config.chain.localProxyRouterUrl}/blockchain/sessions`;
-        const body = {
-          approval: signature.approval,
-          approvalSig: signature.approvalSig,
-          stake: BigInt(stake).toString(),
-        };
-        const response = await fetch(path, {
-          method: "POST",
-          body: JSON.stringify(body)
-        });
-        const dataResponse = await response.json();
-        if (!response.ok) {
-          this.context.toast('error', 'Failed to set session');
-          console.log("Failed to set session", dataResponse);
           return;
         }
         sessionId = dataResponse.sessionId;
       }
       catch (e) {
         console.error(e);
-        this.context.toast('error', 'Failed to set session');
+        this.context.toast('error', 'Failed to open session');
         return;
       }
 
       this.context.toast('success', 'Session successfully created');
-      return { sessionId, signature };
+      return { sessionId };
     }
 
     render() {

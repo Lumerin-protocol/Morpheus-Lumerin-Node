@@ -1,26 +1,30 @@
 package wallet
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
+)
 
 var ErrEnvWalletSet = errors.New("cannot set private key for env wallet, switch to keychain wallet by removing WALLET_PRIVATE_KEY env var")
 
 type EnvWallet struct {
-	privKey   string
+	privKey   lib.HexString
 	updatedCh chan struct{}
 }
 
-func NewEnvWallet(privKey string) *EnvWallet {
+func NewEnvWallet(privKey lib.HexString) *EnvWallet {
 	return &EnvWallet{
 		updatedCh: make(chan struct{}),
 		privKey:   privKey,
 	}
 }
 
-func (w *EnvWallet) GetPrivateKey() (string, error) {
+func (w *EnvWallet) GetPrivateKey() (lib.HexString, error) {
 	return w.privKey, nil
 }
 
-func (w *EnvWallet) SetPrivateKey(privateKeyOxHex string) error {
+func (w *EnvWallet) SetPrivateKey(privateKeyOxHex lib.HexString) error {
 	return ErrEnvWalletSet
 }
 

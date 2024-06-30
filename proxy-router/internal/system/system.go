@@ -3,23 +3,23 @@ package system
 import (
 	"context"
 
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 )
 
 type SystemConfigurator struct {
 	backup         *Config
 	osConfigurator osConfigurator
-	log            interfaces.ILogger
+	log            lib.ILogger
 }
 
-func NewConfigurator(osConfigurator osConfigurator, log interfaces.ILogger) *SystemConfigurator {
+func NewConfigurator(osConfigurator osConfigurator, log lib.ILogger) *SystemConfigurator {
 	return &SystemConfigurator{
 		osConfigurator: osConfigurator,
 		log:            log,
 	}
 }
 
-func CreateConfigurator(log interfaces.ILogger) *SystemConfigurator {
+func CreateConfigurator(log lib.ILogger) *SystemConfigurator {
 	return NewConfigurator(NewOSConfigurator(), log)
 }
 

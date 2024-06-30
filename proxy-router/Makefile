@@ -1,4 +1,10 @@
 run:
+	go run cmd/main.go
+
+run-user:
+	WALLET_PRIVATE_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a PROXY_STORAGE_PATH='./data/badger2/' PROXY_ADDRESS='0.0.0.0:3334' WEB_ADDRESS='0.0.0.0:8083' make run
+
+run-race:
 	GOTRACEBACK=crash go run -gcflags '-N -l' -race cmd/main.go
 
 build:

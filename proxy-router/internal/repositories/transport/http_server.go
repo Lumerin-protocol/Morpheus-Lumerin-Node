@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 )
 
 type Server struct {
@@ -14,10 +14,10 @@ type Server struct {
 	address         string
 	shutdownTimeout time.Duration
 
-	log interfaces.ILogger
+	log lib.ILogger
 }
 
-func NewServer(address string, router http.Handler, log interfaces.ILogger) *Server {
+func NewServer(address string, router http.Handler, log lib.ILogger) *Server {
 	server := &http.Server{Addr: address, Handler: router}
 
 	return &Server{

@@ -3,14 +3,14 @@ package storages
 import (
 	"strings"
 
-	i "github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 )
 
 type BadgerLogger struct {
-	log i.ILogger
+	log lib.ILogger
 }
 
-func NewBadgerLogger(log i.ILogger) *BadgerLogger {
+func NewBadgerLogger(log lib.ILogger) *BadgerLogger {
 	return &BadgerLogger{
 		log: log.Named("BADGER"),
 	}

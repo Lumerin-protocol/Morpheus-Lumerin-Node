@@ -6,9 +6,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/contracts/sessionrouter"
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/lib"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/sessionrouter"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,13 +20,12 @@ type SessionRouter struct {
 
 	// state
 	nonce uint64
-	mutex lib.Mutex
 	srABI *abi.ABI
 
 	// deps
 	sessionRouter *sessionrouter.SessionRouter
 	client        *ethclient.Client
-	log           interfaces.ILogger
+	log           lib.ILogger
 }
 
 var closeReportAbi = []lib.AbiParameter{
@@ -36,7 +34,7 @@ var closeReportAbi = []lib.AbiParameter{
 	{Type: "uint32"},
 }
 
-func NewSessionRouter(sessionRouterAddr common.Address, client *ethclient.Client, log interfaces.ILogger) *SessionRouter {
+func NewSessionRouter(sessionRouterAddr common.Address, client *ethclient.Client, log lib.ILogger) *SessionRouter {
 	sr, err := sessionrouter.NewSessionRouter(sessionRouterAddr, client)
 	if err != nil {
 		panic("invalid marketplace ABI")
@@ -50,43 +48,36 @@ func NewSessionRouter(sessionRouterAddr common.Address, client *ethclient.Client
 		sessionRouterAddr: sessionRouterAddr,
 		client:            client,
 		srABI:             srABI,
-		mutex:             lib.NewMutex(),
 		log:               log,
 	}
 }
 
-func (g *SessionRouter) OpenSession(ctx *bind.TransactOpts, approval []byte, approvalSig []byte, stake *big.Int, privateKeyHex string) (string, error) {
+func (g *SessionRouter) OpenSession(ctx *bind.TransactOpts, approval []byte, approvalSig []byte, stake *big.Int, privateKeyHex lib.HexString) (sessionID common.Hash, providerID common.Address, userID common.Address, err error) {
 	sessionTx, err := g.sessionRouter.OpenSession(ctx, stake, approval, approvalSig)
 	if err != nil {
-		return "", lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
+		return common.Hash{}, common.Address{}, common.Address{}, lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
 	}
 
 	// Wait for the transaction receipt
 	receipt, err := bind.WaitMined(context.Background(), g.client, sessionTx)
 	if err != nil {
-		return "", lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
+		return common.Hash{}, common.Address{}, common.Address{}, lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
 	}
 
 	// Find the event log
 	for _, log := range receipt.Logs {
 		// Check if the log belongs to the OpenSession event
 		event, err := g.sessionRouter.ParseSessionOpened(*log)
-		if err != nil {
-			continue // not our event, skip it
+		if err == nil {
+			return event.SessionId, event.ProviderId, event.UserAddress, nil
 		}
-
-		// Convert the sessionId to string
-		sessionId := lib.BytesToString(event.SessionId[:])
-		return sessionId, nil
 	}
 
-	return "", fmt.Errorf("OpenSession event not found in transaction logs")
+	return common.Hash{}, common.Address{}, common.Address{}, fmt.Errorf("OpenSession event not found in transaction logs")
 }
 
-func (g *SessionRouter) GetSession(ctx context.Context, sessionId string) (*sessionrouter.Session, error) {
-	id := common.FromHex(sessionId)
-
-	session, err := g.sessionRouter.GetSession(&bind.CallOpts{Context: ctx}, [32]byte(id))
+func (g *SessionRouter) GetSession(ctx context.Context, sessionID common.Hash) (*sessionrouter.Session, error) {
+	session, err := g.sessionRouter.GetSession(&bind.CallOpts{Context: ctx}, sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -110,79 +101,54 @@ func (g *SessionRouter) GetSessionsByUser(ctx context.Context, userAddr common.A
 	return sessions, nil
 }
 
-func (g *SessionRouter) CloseSession(ctx *bind.TransactOpts, sessionId string, privateKeyHex string) (string, error) {
-	// fmt.Println("session id: ", sessionId)
-	id := [32]byte(common.FromHex(sessionId))
-	// fmt.Println("id: ", id)
+func (g *SessionRouter) CloseSession(ctx *bind.TransactOpts, sessionID common.Hash, privateKeyHex lib.HexString) (common.Hash, error) {
 	ips := uint32(1)
 	timestamp := big.NewInt(time.Now().UnixMilli())
-	report, err := lib.EncodeAbiParameters(closeReportAbi, []interface{}{id, timestamp, ips})
-
+	report, err := lib.EncodeAbiParameters(closeReportAbi, []interface{}{sessionID, timestamp, ips})
 	if err != nil {
-		// fmt.Println("report err: ", err)
-		return "", err
+		return common.Hash{}, err
 	}
 
-	signature, err := lib.SignEthMessage(report, privateKeyHex)
+	signature, err := lib.SignEthMessageV2(report, privateKeyHex)
 	if err != nil {
-		// fmt.Println("signature err: ", err)
-		return "", err
+		return common.Hash{}, err
 	}
 
 	sessionTx, err := g.sessionRouter.CloseSession(ctx, report, signature)
 	if err != nil {
-		// fmt.Println("sessionTx err: ", err)
-		// fmt.Println("sessionTx: ", sessionTx)
-		return "", lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
+		return common.Hash{}, lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
 	}
 
 	// Wait for the transaction receipt
-	receipt, err := bind.WaitMined(context.Background(), g.client, sessionTx)
+	_, err = bind.WaitMined(context.Background(), g.client, sessionTx)
 	if err != nil {
-		// fmt.Println("receipt err: ", err)
-		// fmt.Println(err)
-		return "", err
+		return common.Hash{}, err
 	}
 
-	// Find the event log
-	for _, log := range receipt.Logs {
-		// Check if the log belongs to the CloseSession event
-		event, err := g.sessionRouter.ParseSessionClosed(*log)
-		if err != nil {
-			continue // not our event, skip it
-		}
-
-		// Convert the sessionId to string
-		sessionId := lib.BytesToString(event.SessionId[:])
-		return sessionId, nil
-	}
-
-	return "", fmt.Errorf("CloseSession event not found in transaction logs")
+	return sessionTx.Hash(), nil
 }
 
-func (g *SessionRouter) GetProviderClaimableBalance(ctx context.Context, sessionId string) (*big.Int, error) {
-	id := [32]byte(common.FromHex(sessionId))
-	balance, err := g.sessionRouter.GetProviderClaimableBalance(&bind.CallOpts{Context: ctx}, id)
+func (g *SessionRouter) GetProviderClaimableBalance(ctx context.Context, sessionId [32]byte) (*big.Int, error) {
+	balance, err := g.sessionRouter.GetProviderClaimableBalance(&bind.CallOpts{Context: ctx}, sessionId)
 	if err != nil {
 		return nil, lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
 	}
 	return balance, nil
 }
 
-func (g *SessionRouter) ClaimProviderBalance(ctx *bind.TransactOpts, sessionId string, amount *big.Int, to common.Address) (string, error) {
-	id := [32]byte(common.FromHex(sessionId))
-	tx, err := g.sessionRouter.ClaimProviderBalance(ctx, id, amount, to)
+func (g *SessionRouter) ClaimProviderBalance(ctx *bind.TransactOpts, sessionId [32]byte, amount *big.Int, to common.Address) (common.Hash, error) {
+	tx, err := g.sessionRouter.ClaimProviderBalance(ctx, sessionId, amount, to)
 	if err != nil {
-		return "", lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
+		return common.Hash{}, lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
 	}
 
 	// Wait for the transaction receipt
 	_, err = bind.WaitMined(context.Background(), g.client, tx)
 	if err != nil {
-		return "", err
+		return common.Hash{}, err
 	}
 
-	return tx.Hash().String(), nil
+	return tx.Hash(), nil
 }
 
 func (g *SessionRouter) GetTodaysBudget(ctx context.Context) (*big.Int, error) {

@@ -3,14 +3,21 @@ package config
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type DerivedConfig struct {
-	WalletAddress string
+	WalletAddress common.Address
 }
 
 // Validation tags described here: https://pkg.go.dev/github.com/go-playground/validator/v10
 type Config struct {
+	AIEngine struct {
+		OpenAIBaseURL string `env:"OPENAI_BASE_URL"     flag:"open-ai-base-url"   validate:"required,url"`
+		OpenAIKey     string `env:"OPENAI_API_KEY"      flag:"open-ai-api-key"`
+	}
 	Blockchain struct {
 		EthNodeAddress string `env:"ETH_NODE_ADDRESS"   flag:"eth-node-address"   validate:"required,url"`
 		EthLegacyTx    bool   `env:"ETH_NODE_LEGACY_TX" flag:"eth-node-legacy-tx" desc:"use it to disable EIP-1559 transactions"`
@@ -18,9 +25,9 @@ type Config struct {
 	}
 	Environment string `env:"ENVIRONMENT" flag:"environment"`
 	Marketplace struct {
-		DiamondContractAddress string `env:"DIAMOND_CONTRACT_ADDRESS" flag:"diamond-address"   validate:"required_if=Disable false,omitempty,eth_addr"`
-		MorTokenAddress        string `env:"MOR_TOKEN_ADDRESS"        flag:"mor-token-address" validate:"required_if=Disable false,omitempty,eth_addr"`
-		WalletPrivateKey       string `env:"WALLET_PRIVATE_KEY"       flag:"wallet-private-key"     desc:"if set, will use this private key to sign transactions, otherwise it will be retrieved from the system keychain"`
+		DiamondContractAddress *common.Address `env:"DIAMOND_CONTRACT_ADDRESS" flag:"diamond-address"   validate:"omitempty,eth_addr"`
+		MorTokenAddress        *common.Address `env:"MOR_TOKEN_ADDRESS"        flag:"mor-token-address" validate:"omitempty,eth_addr"`
+		WalletPrivateKey       *lib.HexString  `env:"WALLET_PRIVATE_KEY"       flag:"wallet-private-key"     desc:"if set, will use this private key to sign transactions, otherwise it will be retrieved from the system keychain"`
 	}
 	Log struct {
 		Color           bool   `env:"LOG_COLOR"            flag:"log-color"`
@@ -36,6 +43,7 @@ type Config struct {
 	Proxy struct {
 		Address        string `env:"PROXY_ADDRESS" flag:"proxy-address" validate:"required,hostname_port"`
 		MaxCachedDests int    `env:"PROXY_MAX_CACHED_DESTS" flag:"proxy-max-cached-dests" validate:"required,number" desc:"maximum number of cached destinations per proxy"`
+		StoragePath    string `env:"PROXY_STORAGE_PATH"    flag:"proxy-storage-path"    validate:"omitempty,dirpath" desc:"enables file storage and sets the folder path"`
 	}
 	System struct {
 		Enable           bool   `env:"SYS_ENABLE"              flag:"sys-enable" desc:"enable system level configuration adjustments"`
@@ -120,6 +128,10 @@ func (cfg *Config) SetDefaults() {
 	if cfg.Web.PublicUrl == "" {
 		cfg.Web.PublicUrl = fmt.Sprintf("http://%s", cfg.Web.Address)
 	}
+
+	if cfg.Proxy.StoragePath == "" {
+		cfg.Proxy.StoragePath = "./data/badger"
+	}
 }
 
 // GetSanitized returns a copy of the config with sensitive data removed
@@ -129,6 +141,9 @@ func (cfg *Config) GetSanitized() interface{} {
 
 	publicCfg.Blockchain.EthLegacyTx = cfg.Blockchain.EthLegacyTx
 	publicCfg.Environment = cfg.Environment
+
+	publicCfg.Marketplace.DiamondContractAddress = cfg.Marketplace.DiamondContractAddress
+	publicCfg.Marketplace.MorTokenAddress = cfg.Marketplace.MorTokenAddress
 
 	publicCfg.Log.Color = cfg.Log.Color
 	publicCfg.Log.FolderPath = cfg.Log.FolderPath

@@ -32,7 +32,11 @@ var (
 	ErrConfigValidation = errors.New("config validation error")
 )
 
-func LoadConfig(cfg ConfigInterface, osArgs *[]string) error {
+type Validator interface {
+	Struct(s interface{}) error
+}
+
+func LoadConfig(cfg ConfigInterface, osArgs *[]string, validator Validator) error {
 	err := godotenv.Load(".env")
 	if err != nil {
 		fmt.Println(lib.WrapError(ErrEnvLoad, err))
@@ -107,11 +111,6 @@ func LoadConfig(cfg ConfigInterface, osArgs *[]string) error {
 	}
 
 	cfg.SetDefaults()
-
-	validator, err := NewValidator()
-	if err != nil {
-		return lib.WrapError(ErrConfigValidation, err)
-	}
 
 	err = validator.Struct(cfg)
 	if err != nil {

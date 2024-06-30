@@ -173,8 +173,8 @@ bedrock-04-PRD-rawimage:
 .update_raw_task_definition: &update_raw_task_definition |
   echo "**************************"
   echo "*** Update Validator Task Definition"
-  echo "*** Unique elements that should be set in calling module are Pool Address, Web_public_url, "
-  echo "*** CI_POOL_ADDRESS, CI_WEB_PUBLIC_URL"
+  echo "*** Unique elements that should be set in calling module are Web_public_url"
+  echo "*** CI_WEB_PUBLIC_URL"
   echo "**************************"
   aws ecs describe-task-definition --region $AWS_DEFAULT_REGION --task-definition tsk-$CI_AWS_TASK > output.json
   echo "**************************"
@@ -189,14 +189,6 @@ bedrock-04-PRD-rawimage:
         { "name": "ETH_NODE_ADDRESS", "value": "'"$CI_ETH_NODE_ADDRESS"'" },
         { "name": "ETH_NODE_LEGACY_TX", "value": "'"$ETH_NODE_LEGACY_TX"'" },
         { "name": "ENVIRONMENT", "value": "'"$ENVIRONMENT"'" },
-        { "name": "HASHRATE_CYCLE_DURATION", "value": "'"$HASHRATE_CYCLE_DURATION"'" },
-        { "name": "HASHRATE_VALIDATION_START_TIMEOUT", "value": "'"$HASHRATE_VALIDATION_START_TIMEOUT"'" },
-        { "name": "HASHRATE_SHARE_TIMEOUT", "value": "'"$HASHRATE_SHARE_TIMEOUT"'" },
-        { "name": "HASHRATE_ERROR_THRESHOLD", "value": "'"$HASHRATE_ERROR_THRESHOLD"'" },
-        { "name": "HASHRATE_ERROR_TIMEOUT", "value": "'"$HASHRATE_ERROR_TIMEOUT"'" },
-        { "name": "CLONE_FACTORY_ADDRESS", "value": "'"$CLONE_FACTORY_ADDRESS"'" },
-        { "name": "MINER_VETTING_DURATION", "value": "'"$MINER_VETTING_DURATION"'" },
-        { "name": "MINER_SHARE_TIMEOUT", "value": "'"$MINER_SHARE_TIMEOUT"'" },
         { "name": "LOG_COLOR", "value": "'"$LOG_COLOR"'" },
         { "name": "LOG_JSON", "value": "'"$LOG_JSON"'" },
         { "name": "LOG_LEVEL_APP", "value": "'"$LOG_LEVEL_APP"'" },
@@ -204,8 +196,6 @@ bedrock-04-PRD-rawimage:
         { "name": "LOG_LEVEL_PROXY", "value": "'"$LOG_LEVEL_PROXY"'" },
         { "name": "LOG_LEVEL_SCHEDULER", "value": "'"$LOG_LEVEL_SCHEDULER"'" },
         { "name": "LOG_LEVEL_CONTRACT", "value": "'"$LOG_LEVEL_CONTRACT"'" },
-        { "name": "POOL_ADDRESS", "value": "'"$CI_POOL_ADDRESS"'" },
-        { "name": "POOL_CONN_TIMEOUT", "value": "'"$POOL_CONN_TIMEOUT"'" },
         { "name": "PROXY_ADDRESS", "value": "'"$PROXY_ADDRESS"'" },
         { "name": "SYS_ENABLE", "value": "'"$SYS_ENABLE"'" },
         { "name": "SYS_LOCAL_PORT_RANGE", "value": "'"$SYS_LOCAL_PORT_RANGE"'" },
@@ -245,19 +235,8 @@ bedrock-04-PRD-rawimage:
 .deploy_raw_seller: &deploy_raw_seller
   - CI_AWS_TASK="proxy-router"
   - CI_WALLET_PRIVATE_KEY=$SELLER_PRIVATEKEY
-  - CI_POOL_ADDRESS=$POOL_ADDRESS
   - CI_WEB_PUBLIC_URL=$WEB_PUBLIC_URL
   - CI_ETH_NODE_ADDRESS=$PROXY_ROUTER_ETH_NODE_ADDRESS
-  - *ecr_login_script
-  - *update_raw_task_definition
-  - *deploy_new_task_definition
-
-.deploy_raw_validator: &deploy_raw_validator
-  - CI_AWS_TASK="proxy-validator"
-  - CI_WALLET_PRIVATE_KEY=$VALIDATOR_PRIVATEKEY
-  - CI_POOL_ADDRESS=$VALIDATOR_POOL_ADDRESS
-  - CI_WEB_PUBLIC_URL="http://validatorapi.$TGT_ENV.lumerin.io"
-  - CI_ETH_NODE_ADDRESS=$VALIDATOR_ETH_NODE_ADDRESS
   - *ecr_login_script
   - *update_raw_task_definition
   - *deploy_new_task_definition
@@ -288,29 +267,6 @@ bedrock-02-DEV-seller:
     - *deploy_raw_seller
     - echo "$TGT_ENV seller updated"
 
-bedrock-02-DEV-validator:
-  stage: deploy
-  environment: dev
-  needs: ["bedrock-02-DEV-rawimage"]
-  rules:
-    - if: $CI_COMMIT_BRANCH == "dev"
-      when: always
-    - if: $CI_COMMIT_BRANCH != "dev"
-      when: never
-    - if: $CI_MERGE_REQUEST_ID
-      when: never
-  tags:
-    - devops
-    - bedrock
-    - shell
-    - titanio-dev
-  variables:
-    TGT_ACCOUNT: $CI_AWS_ACCOUNT_DEV
-    TGT_ENV: dev
-  script:
-    - *deploy_raw_validator
-    - echo "$TGT_ENV validator updated"
-
 #######################
 # DEPLOY STAGING 
 #######################
@@ -336,29 +292,6 @@ bedrock-03-STG-seller:
   script:
     - *deploy_raw_seller
     - echo "$TGT_ENV seller updated"
-
-bedrock-03-STG-validator:
-  stage: deploy
-  environment: stg
-  needs: ["bedrock-03-STG-rawimage"]
-  rules:
-    - if: $CI_COMMIT_BRANCH == "stg"
-      when: always
-    - if: $CI_COMMIT_BRANCH != "stg"
-      when: never
-    - if: $CI_MERGE_REQUEST_ID
-      when: never
-  tags:
-    - devops
-    - bedrock
-    - shell
-    - titanio-stg
-  variables:
-    TGT_ACCOUNT: $CI_AWS_ACCOUNT_STG
-    TGT_ENV: stg
-  script:
-    - *deploy_raw_validator
-    - echo "$TGT_ENV validator updated"
 
 #######################
 # DEPLOY PRODUCTION / MAIN / LMN 
@@ -386,29 +319,6 @@ bedrock-04-PRD-seller:
   script:
     - *deploy_raw_seller
     - echo "$TGT_ENV seller updated"
-
-bedrock-04-PRD-validator:
-  stage: deploy
-  environment: lmn
-  needs: ["bedrock-04-PRD-rawimage"]
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: manual
-    - if: $CI_COMMIT_BRANCH != "main"
-      when: never
-    - if: $CI_MERGE_REQUEST_ID
-      when: never
-  tags:
-    - devops
-    - bedrock
-    - shell
-    - titanio-lmn
-  variables:
-    TGT_ACCOUNT: $CI_AWS_ACCOUNT_LMN
-    TGT_ENV: lmn
-  script:
-    - *deploy_raw_validator
-    - echo "$TGT_ENV validator updated"
 
 #######################
 # E2E TEST STAGE

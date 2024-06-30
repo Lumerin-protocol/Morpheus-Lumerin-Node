@@ -1,25 +1,29 @@
 package httphandlers
 
 import (
-	"fmt"
-	"math/big"
-	"net/http"
 	"net/http/pprof"
 
 	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/apibus"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	// gin-swagger middleware
 	swaggerFiles "github.com/swaggo/files"
 
-	_ "github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/docs"
+	_ "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/docs"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/config"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 )
 
-type HTTPHandler struct{}
+type Registrable interface {
+	RegisterRoutes(r interfaces.Router)
+}
 
 // @title           ApiBus Example API
 // @version         1.0
@@ -30,14 +34,35 @@ type HTTPHandler struct{}
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-func NewHTTPHandler(apiBus *apibus.ApiBus) *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+func CreateHTTPServer(log lib.ILogger, controllers ...Registrable) *gin.Engine {
+	ginValidatorInstance := binding.Validator.Engine().(*validator.Validate)
+	err := config.RegisterHex32(ginValidatorInstance)
+	if err != nil {
+		panic(err)
+	}
+	err = config.RegisterDuration(ginValidatorInstance)
+	if err != nil {
+		panic(err)
+	}
+	err = config.RegisterEthAddr(ginValidatorInstance)
+	if err != nil {
+		panic(err)
+	}
+	err = config.RegisterHexadecimal(ginValidatorInstance)
+	if err != nil {
+		panic(err)
+	}
+
+	// gin.SetMode(gin.ReleaseMode)
+
 	r := gin.New()
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{"session_id"},
 	}))
+
+	// r.Use(RequestLogger(log))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -218,34 +243,13 @@ func NewHTTPHandler(apiBus *apibus.ApiBus) *gin.Engine {
 
 	r.Any("/debug/pprof/*action", gin.WrapF(pprof.Index))
 
+	for _, c := range controllers {
+		c.RegisterRoutes(r)
+	}
+
 	if err := r.SetTrustedProxies(nil); err != nil {
 		panic(err)
 	}
 
 	return r
-}
-
-func getOffsetLimit(ctx *gin.Context) (*big.Int, uint8) {
-	offsetStr := ctx.Query("offset")
-	if offsetStr == "" {
-		offsetStr = "0"
-	}
-	limitStr := ctx.Query("limit")
-	if limitStr == "" {
-		limitStr = "100"
-	}
-
-	offset, ok := new(big.Int).SetString(offsetStr, 10)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid offset"})
-		return nil, 0
-	}
-
-	var limit uint8
-	_, err := fmt.Sscanf(limitStr, "%d", &limit)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit"})
-		return nil, 0
-	}
-	return offset, limit
 }

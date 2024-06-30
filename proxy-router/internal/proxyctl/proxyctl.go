@@ -3,14 +3,20 @@ package proxyctl
 import (
 	"context"
 
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/apibus"
 	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/handlers/tcphandlers"
 	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
 	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/lib"
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/morrpc"
 	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/repositories/transport"
-	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/rpcproxy"
 	"github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/storages"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/aiengine"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/blockchainapi"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/handlers/tcphandlers"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/proxyapi"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/transport"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/storages"
+	"github.com/go-playground/validator/v10"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -37,25 +43,26 @@ func (s ProxyState) String() string {
 	return "unknown"
 }
 
-type SchedulerLogFactory = func(remoteAddr string) (interfaces.ILogger, error)
+type SchedulerLogFactory = func(remoteAddr string) (lib.ILogger, error)
 
 // Proxy is a struct that represents a proxy-router part of the system
 type Proxy struct {
-	eventListener       *rpcproxy.EventsListener
+	eventListener       *blockchainapi.EventsListener
 	wallet              interfaces.PrKeyProvider
-	apiBus              *apibus.ApiBus
 	proxyAddr           string
 	sessionStorage      *storages.SessionStorage
 	log                 *lib.Logger
 	connLog             *lib.Logger
 	schedulerLogFactory SchedulerLogFactory
+	aiEngine            *aiengine.AiEngine
+	validator           *validator.Validate
 
 	state lib.AtomicValue[ProxyState]
 	tsk   *lib.Task
 }
 
 // NewProxyCtl creates a new Proxy controller instance
-func NewProxyCtl(eventListerer *rpcproxy.EventsListener, wallet interfaces.PrKeyProvider, log *lib.Logger, connLog *lib.Logger, proxyAddr string, scl SchedulerLogFactory, sessionStorage *storages.SessionStorage, apiBus *apibus.ApiBus) *Proxy {
+func NewProxyCtl(eventListerer *blockchainapi.EventsListener, wallet interfaces.PrKeyProvider, log *lib.Logger, connLog *lib.Logger, proxyAddr string, scl SchedulerLogFactory, sessionStorage *storages.SessionStorage, valid *validator.Validate, aiEngine *aiengine.AiEngine) *Proxy {
 	return &Proxy{
 		eventListener:       eventListerer,
 		wallet:              wallet,
@@ -64,7 +71,8 @@ func NewProxyCtl(eventListerer *rpcproxy.EventsListener, wallet interfaces.PrKey
 		proxyAddr:           proxyAddr,
 		schedulerLogFactory: scl,
 		sessionStorage:      sessionStorage,
-		apiBus:              apiBus,
+		aiEngine:            aiEngine,
+		validator:           valid,
 	}
 }
 
@@ -109,20 +117,27 @@ func (p *Proxy) Run(ctx context.Context) error {
 	}
 }
 
-func (p *Proxy) run(ctx context.Context, prKey string) error {
+func (p *Proxy) run(ctx context.Context, prKey lib.HexString) error {
 	tcpServer := transport.NewTCPServer(p.proxyAddr, p.connLog.Named("TCP"))
 	prKey, err := p.wallet.GetPrivateKey()
 	if err != nil {
 		return err
 	}
 
-	walletAddr, err := lib.PrivKeyStringToAddr(prKey)
+	walletAddr, err := lib.PrivKeyBytesToAddr(prKey)
 	if err != nil {
 		return err
 	}
 	p.log.Infof("Wallet address: %s", walletAddr.String())
 
-	morTcpHandler := tcphandlers.NewMorRpcHandler(prKey, morrpc.NewMorRpc(), p.sessionStorage, p.apiBus)
+	pubKey, err := lib.PubKeyFromPrivate(prKey)
+	if err != nil {
+		return err
+	}
+
+	proxyReceiver := proxyapi.NewProxyReceiver(prKey, pubKey, p.sessionStorage, p.aiEngine)
+
+	morTcpHandler := proxyapi.NewMORRPCController(proxyReceiver, p.validator, p.sessionStorage)
 	tcpHandler := tcphandlers.NewTCPHandler(
 		p.log, p.connLog, p.schedulerLogFactory, morTcpHandler,
 	)

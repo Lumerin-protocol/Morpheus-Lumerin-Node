@@ -17,6 +17,7 @@ export function startCore({ chain, core, config: coreConfig }, webContent) {
 
   events.push(
     'create-wallet',
+    'open-wallet',
     'transactions-scan-started',
     'transactions-scan-finished',
     'contracts-scan-started',

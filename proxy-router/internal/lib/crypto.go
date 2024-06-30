@@ -15,6 +15,16 @@ var (
 	ErrInvalidPrivateKey = fmt.Errorf("invalid private key")
 )
 
+func DecodeBytes(bytes []byte, privateKey string) ([]byte, error) {
+	pkECDSA, err := crypto.ToECDSA(common.FromHex(privateKey))
+	if err != nil {
+		return nil, WrapError(ErrInvalidPrivateKey, err)
+	}
+
+	pkECIES := ecies.ImportECDSA(pkECDSA)
+	return pkECIES.Decrypt(bytes, nil, nil)
+}
+
 func DecryptString(str string, privateKey string) (string, error) {
 	pkECDSA, err := crypto.ToECDSA(common.FromHex(privateKey))
 	if err != nil {
@@ -70,7 +80,11 @@ func PrivKeyToAddr(privateKey *ecdsa.PrivateKey) (common.Address, error) {
 }
 
 func PrivKeyStringToAddr(privateKey string) (common.Address, error) {
-	privKey, err := crypto.ToECDSA(common.FromHex(privateKey))
+	return PrivKeyBytesToAddr(common.FromHex(privateKey))
+}
+
+func PrivKeyBytesToAddr(privateKey []byte) (common.Address, error) {
+	privKey, err := crypto.ToECDSA(privateKey)
 	if err != nil {
 		return common.Address{}, WrapError(ErrInvalidPrivateKey, err)
 	}
@@ -83,18 +97,25 @@ func PrivKeyStringToAddr(privateKey string) (common.Address, error) {
 }
 
 func PubKeyStringFromPrivate(privateKey string) (string, error) {
-	privKey, err := crypto.ToECDSA(common.FromHex(privateKey))
+	publicKeyBytes, err := PubKeyFromPrivate(common.FromHex(privateKey))
 	if err != nil {
-		return "", WrapError(ErrInvalidPrivateKey, err)
+		return "", err
+	}
+	return hex.EncodeToString(publicKeyBytes), nil
+}
+
+func PubKeyFromPrivate(privateKey HexString) (HexString, error) {
+	privKey, err := crypto.ToECDSA(privateKey)
+	if err != nil {
+		return nil, WrapError(ErrInvalidPrivateKey, err)
 	}
 
 	pubKey := privKey.Public()
 	pubKeyECDSA, ok := pubKey.(*ecdsa.PublicKey)
 	if !ok {
-		return "", fmt.Errorf("error casting public key to ECDSA: %v", pubKeyECDSA)
+		return nil, fmt.Errorf("error casting public key to ECDSA: %v", pubKeyECDSA)
 	}
-	publicKeyBytes := crypto.FromECDSAPub(pubKeyECDSA)
-	return hex.EncodeToString(publicKeyBytes), nil
+	return crypto.FromECDSAPub(pubKeyECDSA), nil
 }
 
 func MustPubKeyStringFromPrivate(privateKey string) string {
@@ -119,4 +140,14 @@ func MustPrivKeyStringToAddr(privateKey string) common.Address {
 		panic(err)
 	}
 	return addr
+}
+
+// https://goethereumbook.org/signature-verify/
+func VerifySignature(params []byte, signature []byte, publicKeyBytes []byte) bool {
+	hash := crypto.Keccak256Hash(params)
+	if len(signature) == 0 {
+		return false
+	}
+	signatureNoRecoverID := signature[:len(signature)-1] // remove recovery ID
+	return crypto.VerifySignature(publicKeyBytes, hash.Bytes(), signatureNoRecoverID)
 }
