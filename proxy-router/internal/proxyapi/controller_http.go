@@ -6,7 +6,7 @@ import (
 	constants "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/aiengine"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 	"github.com/gin-gonic/gin"
 	"github.com/sashabaranov/go-openai"
 )
@@ -70,6 +70,7 @@ func (c *ProxyController) Prompt(ctx *gin.Context) {
 		body openai.ChatCompletionRequest
 		head PromptHead
 	)
+
 	if err := ctx.ShouldBindHeader(&head); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -79,13 +80,13 @@ func (c *ProxyController) Prompt(ctx *gin.Context) {
 		return
 	}
 
-	if (head.SessionID == common.Hash{}) {
+	if (head.SessionID == lib.Hash{}) {
 		body.Stream = ctx.GetHeader(constants.HEADER_ACCEPT) == constants.CONTENT_TYPE_JSON
 		c.aiEngine.PromptCb(ctx, &body)
 		return
 	}
 
-	err := c.service.SendPrompt(ctx, ctx.Writer, &body, head.SessionID)
+	err := c.service.SendPrompt(ctx, ctx.Writer, &body, head.SessionID.Hash)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

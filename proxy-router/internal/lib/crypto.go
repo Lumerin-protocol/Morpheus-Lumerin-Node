@@ -15,8 +15,8 @@ var (
 	ErrInvalidPrivateKey = fmt.Errorf("invalid private key")
 )
 
-func DecodeBytes(bytes []byte, privateKey string) ([]byte, error) {
-	pkECDSA, err := crypto.ToECDSA(common.FromHex(privateKey))
+func DecryptBytes(bytes, privateKey []byte) ([]byte, error) {
+	pkECDSA, err := crypto.ToECDSA(privateKey)
 	if err != nil {
 		return nil, WrapError(ErrInvalidPrivateKey, err)
 	}

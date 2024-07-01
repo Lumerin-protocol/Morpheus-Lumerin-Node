@@ -213,7 +213,7 @@ func start() error {
 	aiEngine := aiengine.NewAiEngine(cfg.AIEngine.OpenAIBaseURL, cfg.AIEngine.OpenAIKey, log)
 
 	sessionRouter := registries.NewSessionRouter(*cfg.Marketplace.DiamondContractAddress, ethClient, log)
-	eventListener := blockchainapi.NewEventsListener(ethClient, sessionStorage, sessionRouter, log)
+	eventListener := blockchainapi.NewEventsListener(ethClient, sessionStorage, sessionRouter, wallet, log)
 
 	blockchainController := blockchainapi.NewBlockchainController(blockchainApi, log)
 	proxyController := proxyapi.NewProxyController(proxyRouterApi, aiEngine)

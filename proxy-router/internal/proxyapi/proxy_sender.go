@@ -228,7 +228,7 @@ func (p *ProxyServiceSender) rpcRequestStream(ctx context.Context, resWriter Res
 		}
 
 		var inferenceRes InferenceRes
-		err := json.Unmarshal(*msg.Result, &msg)
+		err := json.Unmarshal(*msg.Result, &inferenceRes)
 		if err != nil {
 			return lib.WrapError(ErrInvalidResponse, err)
 		}
@@ -239,7 +239,13 @@ func (p *ProxyServiceSender) rpcRequestStream(ctx context.Context, resWriter Res
 			return ErrInvalidSig
 		}
 
-		aiResponse, err := lib.DecodeBytes(inferenceRes.Message, prKey.String())
+		var message lib.HexString
+		err = json.Unmarshal(inferenceRes.Message, &message)
+		if err != nil {
+			return lib.WrapError(ErrInvalidResponse, err)
+		}
+
+		aiResponse, err := lib.DecryptBytes(message, prKey)
 		if err != nil {
 			return lib.WrapError(ErrDecrFailed, err)
 		}

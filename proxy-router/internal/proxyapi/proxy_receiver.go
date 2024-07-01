@@ -32,8 +32,6 @@ func NewProxyReceiver(privateKeyHex, publicKeyHex lib.HexString, sessionStorage 
 }
 
 func (s *ProxyReceiver) SessionPrompt(ctx context.Context, requestID string, userPubKey string, rq *m.SessionPromptReq, sendResponse SendResponse, sourceLog lib.ILogger) error {
-	// TODO: check if session is still active
-
 	var req *openai.ChatCompletionRequest
 
 	err := json.Unmarshal([]byte(rq.Message), &req)
@@ -49,7 +47,7 @@ func (s *ProxyReceiver) SessionPrompt(ctx context.Context, requestID string, use
 			return err
 		}
 
-		encryptedResponse, err := lib.EncryptString(string(marshalledResponse), userPubKey)
+		encryptedResponse, err := lib.EncryptString(string(marshalledResponse), lib.RemoveHexPrefix(userPubKey))
 		if err != nil {
 			return err
 		}

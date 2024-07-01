@@ -22,7 +22,7 @@ func NewExplorerClient(explorerApiUrl string, morTokenAddr string) *ExplorerClie
 }
 
 func (e *ExplorerClient) GetEthTransactions(address common.Address, page uint64, limit uint8) ([]structs.RawTransaction, error) {
-	query := fmt.Sprintf("?module=account&action=txlist&address=%s&page=%d&offset=%d", address.Hex(), page, limit)
+	query := fmt.Sprintf("?module=account&action=txlist&address=%s&page=%d&offset=%d&sort=desc", address.Hex(), page, limit)
 	url := e.explorerApiUrl + query
 
 	transactions, err := e.doRequest(url)
@@ -33,7 +33,7 @@ func (e *ExplorerClient) GetEthTransactions(address common.Address, page uint64,
 }
 
 func (e *ExplorerClient) GetTokenTransactions(address common.Address, page uint64, limit uint8) ([]structs.RawTransaction, error) {
-	query := fmt.Sprintf("?module=account&action=tokentx&contractaddress=%s&address=%s&page=%d&offset=%d", e.morTokenAddr, address.Hex(), page, limit)
+	query := fmt.Sprintf("?module=account&action=tokentx&contractaddress=%s&address=%s&page=%d&offset=%d&sort=desc", e.morTokenAddr, address.Hex(), page, limit)
 	url := e.explorerApiUrl + query
 
 	transactions, err := e.doRequest(url)

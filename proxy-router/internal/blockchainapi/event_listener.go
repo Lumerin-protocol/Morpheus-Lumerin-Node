@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/sessionrouter"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/registries"
@@ -17,14 +18,16 @@ type EventsListener struct {
 	tsk           *lib.Task
 	log           *lib.Logger
 	client        *ethclient.Client
+	wallet        interfaces.Wallet
 }
 
-func NewEventsListener(client *ethclient.Client, store *storages.SessionStorage, sessionRouter *registries.SessionRouter, log *lib.Logger) *EventsListener {
+func NewEventsListener(client *ethclient.Client, store *storages.SessionStorage, sessionRouter *registries.SessionRouter, wallet interfaces.Wallet, log *lib.Logger) *EventsListener {
 	return &EventsListener{
 		store:         store,
 		log:           log,
 		sessionRouter: sessionRouter,
 		client:        client,
+		wallet:        wallet,
 	}
 }
 
@@ -68,12 +71,33 @@ func (e *EventsListener) handleSessionOpened(event *sessionrouter.SessionRouterS
 	sessionId := lib.BytesToString(event.SessionId[:])
 	e.log.Debugf("received open session router event, sessionId %s", sessionId)
 
-	// TDO: pull session from bc
-	// add
-	err := e.store.AddSession(&storages.Session{
+	session, err := e.sessionRouter.GetSession(context.Background(), event.SessionId)
+	if err != nil {
+		e.log.Errorf("failed to get session from blockchain: %s, sessionId %s", err, sessionId)
+		return err
+	}
+
+	privateKey, err := e.wallet.GetPrivateKey()
+	if err != nil {
+		e.log.Errorf("failed to get private key: %s", err)
+		return err
+	}
+
+	address, err := lib.PrivKeyBytesToAddr(privateKey)
+	if err != nil {
+		e.log.Errorf("failed to get address from private key: %s", err)
+		return err
+	}
+
+	if session.Provider.Hex() != address.Hex() {
+		e.log.Debugf("session provider is not me, skipping, sessionId %s", sessionId)
+		return nil
+	}
+
+	err = e.store.AddSession(&storages.Session{
 		Id:       sessionId,
 		UserAddr: event.UserAddress.Hex(),
-		// add more fields endsAt
+		EndsAt:   session.EndsAt,
 	})
 	if err != nil {
 		return err

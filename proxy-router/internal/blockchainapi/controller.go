@@ -413,14 +413,14 @@ func (c *BlockchainController) openSession(ctx *gin.Context) {
 		return
 	}
 
-	txHash, err := c.service.OpenSession(ctx, reqPayload.Approval, reqPayload.ApprovalSig, reqPayload.Stake.Unpack())
+	sessionId, err := c.service.OpenSession(ctx, reqPayload.Approval, reqPayload.ApprovalSig, reqPayload.Stake.Unpack())
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"tx": txHash.Hex()})
+	ctx.JSON(http.StatusOK, gin.H{"sessionId": sessionId.Hex()})
 	return
 }
 
@@ -449,13 +449,13 @@ func (s *BlockchainController) openSessionByBid(ctx *gin.Context) {
 		return
 	}
 
-	txHash, err := s.service.openSessionByBid(ctx, params.ID.Hash, reqPayload.SessionDuration.Unpack())
+	sessionId, err := s.service.openSessionByBid(ctx, params.ID.Hash, reqPayload.SessionDuration.Unpack())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"tx": txHash.Hex()})
+	ctx.JSON(http.StatusOK, gin.H{"sessionId": sessionId.Hex()})
 	return
 }
 
@@ -485,14 +485,14 @@ func (s *BlockchainController) openSessionByModelId(ctx *gin.Context) {
 		return
 	}
 
-	txHash, err := s.service.OpenSessionByModelId(ctx, params.ID.Hash, reqPayload.SessionDuration.Unpack())
+	sessionId, err := s.service.OpenSessionByModelId(ctx, params.ID.Hash, reqPayload.SessionDuration.Unpack())
 	if err != nil {
 		s.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"tx": txHash.Hex()})
+	ctx.JSON(http.StatusOK, gin.H{"sessionId": sessionId.Hex()})
 	return
 }
 

@@ -103,6 +103,13 @@ func (s *MORRPCController) sessionPrompt(ctx context.Context, msg m.RPCMessage, 
 		return err
 	}
 
+	isSessionExpired := session.EndsAt.Uint64()*1000 < req.Timestamp
+	if isSessionExpired {
+		err := fmt.Errorf("session expired")
+		sourceLog.Error(err)
+		return err
+	}
+
 	user, ok := s.sessionStorage.GetUser(session.UserAddr)
 	if !ok {
 		err := fmt.Errorf("user not found")

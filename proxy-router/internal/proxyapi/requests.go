@@ -22,11 +22,11 @@ type PromptReq struct {
 }
 
 type PromptHead struct {
-	SessionID common.Hash `json:"sessionid" validate:"hex32"`
+	SessionID lib.Hash `header:"session_id" validate:"hex32"`
 }
 
 type InferenceRes struct {
-	Signature lib.HexString   `json:"signature" validate:"required,hexadecimal"`
+	Signature lib.HexString   `json:"signature,omitempty" validate:"required,hexadecimal"`
 	Message   json.RawMessage `json:"message" validate:"required"`
-	Timestamp string          `json:"timestamp" validate:"required,timestamp"`
+	Timestamp uint64          `json:"timestamp" validate:"required,timestamp"`
 }

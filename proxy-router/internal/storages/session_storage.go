@@ -3,6 +3,7 @@ package storages
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strings"
 )
 
@@ -10,6 +11,7 @@ type Session struct {
 	Id           string
 	UserAddr     string
 	ProviderAddr string
+	EndsAt       *big.Int
 }
 
 type User struct {

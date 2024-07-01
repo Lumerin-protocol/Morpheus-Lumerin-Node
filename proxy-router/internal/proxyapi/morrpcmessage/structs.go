@@ -27,7 +27,7 @@ type SessionRes struct {
 
 type SessionPromptReq struct {
 	Signature lib.HexString `json:"signature,omitempty" validate:"required,hexadecimal"`
-	SessionID common.Hash   `json:"sessionid" validate:"required,hexadecimal"`
+	SessionID common.Hash   `json:"sessionid" validate:"required,hex32"`
 	Message   string        `json:"message"   validate:"required"`
 	Timestamp uint64        `json:"timestamp" validate:"required,number"`
 }
