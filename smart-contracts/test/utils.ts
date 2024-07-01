@@ -164,3 +164,6 @@ export const startOfTheDay = (timestamp: bigint): bigint => {
 export const NewDate = (timestamp: bigint): Date => {
   return new Date(Number(timestamp) * 1000);
 };
+
+export const PanicOutOfBoundsRegexp =
+  /.*reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)*/;

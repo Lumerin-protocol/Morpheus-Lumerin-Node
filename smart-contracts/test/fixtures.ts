@@ -10,7 +10,7 @@ import {
 import { getHex, getTxTimestamp, now, nowChain, randomBytes32 } from "./utils";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { FacetCutAction, getSelectors } from "../libraries/diamond";
-import { HOUR, MINUTE, SECOND } from "../utils/time";
+import { DAY, HOUR, MINUTE, SECOND } from "../utils/time";
 import {
   GetContractReturnType,
   WalletClient,
@@ -153,6 +153,8 @@ export async function deploySingleProvider() {
     stake: parseUnits("100", decimalsMOR),
     endpoint: "localhost:3334",
     createdAt: 0n,
+    limitPeriodEarned: 0n,
+    limitPeriodEnd: 0n,
     isDeleted: false,
   };
 
@@ -182,6 +184,8 @@ export async function deploySingleProvider() {
     publicClient,
     addProviderHash,
   );
+  expectedProvider.limitPeriodEnd =
+    expectedProvider.createdAt + BigInt(365 * (DAY / SECOND));
 
   return {
     expectedProvider,
@@ -244,6 +248,7 @@ export async function deploySingleBid() {
     publicClient,
     tokenMOR,
     modelRegistry,
+    providerRegistry,
     user,
     decimalsMOR,
     marketplace,
@@ -361,7 +366,11 @@ export async function deploySingleBid() {
   return {
     expectedBid,
     expectedSession,
+    expectedProvider,
+    expectedModel,
     marketplace,
+    modelRegistry,
+    providerRegistry,
     owner,
     provider,
     publicClient,

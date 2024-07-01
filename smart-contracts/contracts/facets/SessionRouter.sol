@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import { KeySet, Uint256Set } from "../libraries/KeySet.sol";
-import { AppStorage, Session, Bid, OnHold, Pool } from "../AppStorage.sol";
+import { AppStorage, Session, Bid, OnHold, Pool, Provider, PROVIDER_REWARD_LIMITER_PERIOD } from "../AppStorage.sol";
 import { LibOwner } from "../libraries/LibOwner.sol";
 import { LinearDistributionIntervalDecrease } from "../libraries/LinearDistributionIntervalDecrease.sol";
 
@@ -26,6 +26,7 @@ contract SessionRouter {
   // errors
   error NotUserOrProvider();
   error NotEnoughWithdrawableBalance(); // means that there is not enough funds at all or some funds are still locked
+  error WithdrawableBalanceLimitByStakeReached(); // means that user can't withdraw more funds because of the limit which equals to the stake
   error ProviderSignatureMismatch();
   error SignatureExpired();
   error DuplicateApproval();
@@ -223,8 +224,6 @@ contract SessionRouter {
       session.closeoutType = 1;
     }
 
-    session.providerWithdrawnAmount += providerWithdraw;
-
     // we have to lock today's stake so the user won't get the reward twice
     uint256 userStakeToLock = 0;
     if (!isClosingLate) {
@@ -243,8 +242,10 @@ contract SessionRouter {
 
     emit SessionClosed(session.user, sessionId, session.provider);
 
-    // withdraw provider and user funds
-    s.token.transferFrom(s.fundingAccount, session.provider, providerWithdraw);
+    // withdraw provider
+    rewardProvider(session, providerWithdraw, false);
+
+    // withdraw user
     s.token.transfer(session.user, userWithdraw);
   }
 
@@ -260,7 +261,7 @@ contract SessionRouter {
   }
 
   /// @notice allows provider to claim their funds
-  function claimProviderBalance(bytes32 sessionId, uint256 amountToWithdraw, address to) external {
+  function claimProviderBalance(bytes32 sessionId, uint256 amountToWithdraw) external {
     Session storage session = s.sessions[s.sessionMap[sessionId]];
     if (session.openedAt == 0) {
       revert SessionNotFound();
@@ -268,18 +269,15 @@ contract SessionRouter {
     LibOwner._senderOrOwner(session.provider);
 
     uint256 withdrawableAmount = _getProviderClaimableBalance(session);
-
     if (amountToWithdraw > withdrawableAmount) {
       revert NotEnoughWithdrawableBalance();
     }
 
-    session.providerWithdrawnAmount += amountToWithdraw;
-    s.totalClaimed += amountToWithdraw;
-    s.token.transferFrom(s.fundingAccount, to, amountToWithdraw);
+    rewardProvider(session, amountToWithdraw, true);
     return;
   }
 
-  function _getProviderClaimableBalance(Session memory session) internal view returns (uint256) {
+  function _getProviderClaimableBalance(Session memory session) private view returns (uint256) {
     // if session was closed with no dispute - provider already got all funds
     //
     // if session was closed with dispute   -
@@ -441,15 +439,44 @@ contract SessionRouter {
     s.pools[index] = pool;
   }
 
-  function startOfTheDay(uint256 timestamp) public pure returns (uint256) {
+  function maybeResetProviderRewardLimiter(Provider storage provider) private {
+    if (block.timestamp > provider.limitPeriodEnd) {
+      provider.limitPeriodEnd += PROVIDER_REWARD_LIMITER_PERIOD;
+      provider.limitPeriodEarned = 0;
+    }
+  }
+
+  /// @notice sends provider reward considering stake as the limit for the reward
+  /// @param session session storage object
+  /// @param reward amount of reward to send
+  /// @param revertOnReachingLimit if true function will revert if reward is more than stake, otherwise just limit the reward
+  function rewardProvider(Session storage session, uint256 reward, bool revertOnReachingLimit) private {
+    Provider storage provider = s.providerMap[session.provider];
+    maybeResetProviderRewardLimiter(provider);
+    uint256 limit = provider.stake - provider.limitPeriodEarned;
+
+    if (reward > limit) {
+      if (revertOnReachingLimit) {
+        revert WithdrawableBalanceLimitByStakeReached();
+      }
+      reward = limit;
+    }
+
+    session.providerWithdrawnAmount += reward;
+    s.totalClaimed += reward;
+    provider.limitPeriodEarned += reward;
+    s.token.transferFrom(s.fundingAccount, session.provider, reward);
+  }
+
+  function startOfTheDay(uint256 timestamp) private pure returns (uint256) {
     return timestamp - (timestamp % 1 days);
   }
 
-  function minUint256(uint256 a, uint256 b) internal pure returns (uint256) {
+  function minUint256(uint256 a, uint256 b) private pure returns (uint256) {
     return a < b ? a : b;
   }
 
-  function maxUint256(uint256 a, uint256 b) internal pure returns (uint256) {
+  function maxUint256(uint256 a, uint256 b) private pure returns (uint256) {
     return a > b ? a : b;
   }
 }

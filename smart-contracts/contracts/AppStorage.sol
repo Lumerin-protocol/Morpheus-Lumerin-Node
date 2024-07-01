@@ -4,10 +4,15 @@ pragma solidity ^0.8.0;
 import { KeySet, AddressSet, Uint256Set } from "./libraries/KeySet.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+
+uint128 constant PROVIDER_REWARD_LIMITER_PERIOD = 365 days; // reward for this period will be limited by the stake
+
 struct Provider {
   string endpoint; // example 'domain.com:1234'
-  uint256 stake; // stake amount
+  uint256 stake; // stake amount, which also server as a reward limiter
   uint128 createdAt; // timestamp of the registration
+  uint128 limitPeriodEnd; // timestamp of the limiter period end
+  uint256 limitPeriodEarned; // total earned during the last limiter period
   bool isDeleted;
 }
 

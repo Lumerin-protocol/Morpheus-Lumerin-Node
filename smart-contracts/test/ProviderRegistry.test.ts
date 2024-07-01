@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-toolbox-viem/network-helpe
 import { expect } from "chai";
 import hre from "hardhat";
 import { getAddress } from "viem";
-import { catchError, getTxTimestamp } from "./utils";
+import { PanicOutOfBoundsRegexp, catchError } from "./utils";
 import { deployDiamond, deploySingleProvider } from "./fixtures";
 
 describe("Provider registry", function () {
@@ -33,6 +33,8 @@ describe("Provider registry", function () {
         endpoint: expectedProvider.endpoint,
         stake: expectedProvider.stake,
         createdAt: expectedProvider.createdAt,
+        limitPeriodEarned: expectedProvider.limitPeriodEarned,
+        limitPeriodEnd: expectedProvider.limitPeriodEnd,
         isDeleted: false,
       });
       expect(events.length).eq(1);
@@ -81,77 +83,77 @@ describe("Provider registry", function () {
       });
     });
 
-    it("Should deregister by provider", async function () {
-      const { providerRegistry, provider, expectedProvider } =
-        await loadFixture(deploySingleProvider);
+    describe("Deregister", function () {
+      it("Should deregister by provider", async function () {
+        const { providerRegistry, provider } =
+          await loadFixture(deploySingleProvider);
 
-      await providerRegistry.write.providerDeregister(
-        [provider.account.address],
-        {
-          account: provider.account,
-        },
-      );
-      const events = await providerRegistry.getEvents.ProviderDeregistered({
-        provider: getAddress(provider.account.address),
+        await providerRegistry.write.providerDeregister(
+          [provider.account.address],
+          {
+            account: provider.account,
+          },
+        );
+        const events = await providerRegistry.getEvents.ProviderDeregistered({
+          provider: getAddress(provider.account.address),
+        });
+
+        expect(await providerRegistry.read.providerGetCount()).eq(0n);
+        expect(
+          (await providerRegistry.read.providerMap([provider.account.address]))
+            .isDeleted,
+        ).to.equal(true);
+        expect(events.length).eq(1);
+        await expect(
+          providerRegistry.read.providerGetByIndex([0n]),
+        ).rejectedWith(PanicOutOfBoundsRegexp);
+        expect(await providerRegistry.read.providers([0n])).equals(
+          getAddress(provider.account.address),
+        );
       });
 
-      expect(await providerRegistry.read.providerGetCount()).eq(0n);
-      expect(
-        (await providerRegistry.read.providerMap([provider.account.address]))
-          .isDeleted,
-      ).to.equal(true);
-      expect(events.length).eq(1);
-      await expect(providerRegistry.read.providerGetByIndex([0n])).rejectedWith(
-        /.*reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)*/,
-      );
-      expect(await providerRegistry.read.providers([0n])).equals(
-        getAddress(provider.account.address),
-      );
-    });
+      it("Should deregister by admin", async function () {
+        const { providerRegistry, provider, owner } =
+          await loadFixture(deploySingleProvider);
 
-    it("Should deregister by admin", async function () {
-      const { providerRegistry, provider, owner } =
-        await loadFixture(deploySingleProvider);
+        await providerRegistry.write.providerDeregister(
+          [provider.account.address],
+          {
+            account: owner.account,
+          },
+        );
+        const events = await providerRegistry.getEvents.ProviderDeregistered({
+          provider: getAddress(provider.account.address),
+        });
 
-      await providerRegistry.write.providerDeregister(
-        [provider.account.address],
-        {
-          account: owner.account,
-        },
-      );
-      const events = await providerRegistry.getEvents.ProviderDeregistered({
-        provider: getAddress(provider.account.address),
+        expect(await providerRegistry.read.providerGetCount()).eq(0n);
+        expect(events.length).eq(1);
       });
 
-      expect(await providerRegistry.read.providerGetCount()).eq(0n);
-      expect(events.length).eq(1);
-    });
+      it("Should return stake on deregister", async function () {
+        const { providerRegistry, provider, tokenMOR, expectedProvider } =
+          await loadFixture(deploySingleProvider);
 
-    it("Should return stake on deregister", async function () {
-      const { providerRegistry, provider, tokenMOR, expectedProvider } =
-        await loadFixture(deploySingleProvider);
+        const balanceBefore = await tokenMOR.read.balanceOf([
+          provider.account.address,
+        ]);
+        await providerRegistry.write.providerDeregister([
+          provider.account.address,
+        ]);
+        const balanceAfter = await tokenMOR.read.balanceOf([
+          provider.account.address,
+        ]);
 
-      const balanceBefore = await tokenMOR.read.balanceOf([
-        provider.account.address,
-      ]);
-      await providerRegistry.write.providerDeregister([
-        provider.account.address,
-      ]);
-      const balanceAfter = await tokenMOR.read.balanceOf([
-        provider.account.address,
-      ]);
+        expect(balanceAfter - balanceBefore).eq(expectedProvider.stake);
+      });
 
-      expect(balanceAfter - balanceBefore).eq(expectedProvider.stake);
+      it.skip("Should block withdrawing whole stake if provider already earned", async function () {});
+      it.skip("Should allow withdrawing remaining stake after limit period", async function () {});
     });
 
     it("Should update stake and url", async function () {
-      const {
-        providerRegistry,
-        provider,
-        tokenMOR,
-        expectedProvider,
-        publicClient,
-      } = await loadFixture(deploySingleProvider);
+      const { providerRegistry, provider, tokenMOR, expectedProvider } =
+        await loadFixture(deploySingleProvider);
       const updates = {
         addStake: expectedProvider.stake * 2n,
         endpoint: "new-endpoint",
@@ -167,7 +169,6 @@ describe("Provider registry", function () {
         [provider.account.address, updates.addStake, updates.endpoint],
         { account: provider.account },
       );
-      const timestamp = await getTxTimestamp(publicClient, txHash);
       const providerData = await providerRegistry.read.providerMap([
         provider.account.address,
       ]);
@@ -175,7 +176,9 @@ describe("Provider registry", function () {
       expect(providerData).deep.equal({
         endpoint: updates.endpoint,
         stake: expectedProvider.stake + updates.addStake,
-        createdAt: timestamp,
+        createdAt: expectedProvider.createdAt,
+        limitPeriodEarned: expectedProvider.limitPeriodEarned,
+        limitPeriodEnd: expectedProvider.limitPeriodEnd,
         isDeleted: expectedProvider.isDeleted,
       });
     });
@@ -219,6 +222,8 @@ describe("Provider registry", function () {
       expect(providerData).deep.equal({
         endpoint: expectedProvider.endpoint,
         stake: expectedProvider.stake,
+        limitPeriodEarned: expectedProvider.limitPeriodEarned,
+        limitPeriodEnd: expectedProvider.limitPeriodEnd,
         createdAt: expectedProvider.createdAt,
         isDeleted: expectedProvider.isDeleted,
       });
@@ -234,6 +239,8 @@ describe("Provider registry", function () {
       expect(providerData).deep.equal({
         endpoint: expectedProvider.endpoint,
         stake: expectedProvider.stake,
+        limitPeriodEarned: expectedProvider.limitPeriodEarned,
+        limitPeriodEnd: expectedProvider.limitPeriodEnd,
         createdAt: expectedProvider.createdAt,
         isDeleted: expectedProvider.isDeleted,
       });
@@ -252,6 +259,8 @@ describe("Provider registry", function () {
       expect(providers[0]).deep.equal({
         endpoint: expectedProvider.endpoint,
         stake: expectedProvider.stake,
+        limitPeriodEarned: expectedProvider.limitPeriodEarned,
+        limitPeriodEnd: expectedProvider.limitPeriodEnd,
         createdAt: expectedProvider.createdAt,
         isDeleted: expectedProvider.isDeleted,
       });

@@ -5,9 +5,10 @@ import {
 import { expect } from "chai";
 import hre from "hardhat";
 import { deploySingleBid, getProviderApproval, getReport } from "../fixtures";
-import { getSessionId } from "../utils";
+import { getSessionId, getTxTimestamp, nowChain } from "../utils";
 import { DAY, SECOND } from "../../utils/time";
 import { expectAlmostEqual, expectAlmostEqualDelta } from "../../utils/compare";
+import { getAddress, parseUnits } from "viem";
 
 describe("session closeout", function () {
   it("should open short (<1D) session and close after expiration", async function () {
@@ -193,7 +194,6 @@ describe("session closeout", function () {
     await sessionRouter.write.claimProviderBalance([
       sessionId,
       claimableProvider2,
-      exp.provider,
     ]);
 
     // verify provider balance after claim
@@ -203,4 +203,119 @@ describe("session closeout", function () {
     const providerClaimed = providerBalanceAfterClaim - providerBalanceAfter;
     expect(providerClaimed).to.equal(exp.totalCost);
   });
+
+  it("should limit reward by stake amount", async function () {
+    const {
+      sessionRouter,
+      marketplace,
+      expectedProvider,
+      expectedModel,
+      provider,
+      decimalsMOR,
+      user,
+      modelRegistry,
+      providerRegistry,
+      publicClient,
+      tokenMOR,
+    } = await loadFixture(deploySingleBid);
+
+    // expected bid
+    const expectedBid = {
+      id: "" as `0x${string}`,
+      providerAddr: getAddress(expectedProvider.address),
+      modelId: expectedModel.modelId,
+      pricePerSecond: parseUnits("0.1", decimalsMOR),
+      nonce: 0n,
+      createdAt: 0n,
+      deletedAt: 0n,
+    };
+
+    // add single bid
+    const postBidtx = await marketplace.simulate.postModelBid(
+      [
+        expectedBid.providerAddr,
+        expectedBid.modelId,
+        expectedBid.pricePerSecond,
+      ],
+      { account: provider.account.address },
+    );
+    const txHash = await provider.writeContract(postBidtx.request);
+
+    expectedBid.id = postBidtx.result;
+    expectedBid.createdAt = await getTxTimestamp(publicClient, txHash);
+
+    // calculate data for session opening
+    const totalCost = expectedProvider.stake * 2n;
+    const durationSeconds = totalCost / expectedBid.pricePerSecond;
+    const totalSupply = await sessionRouter.read.totalMORSupply([
+      await nowChain(),
+    ]);
+    const todaysBudget = await sessionRouter.read.getTodaysBudget([
+      await nowChain(),
+    ]);
+
+    const expectedSession = {
+      durationSeconds,
+      totalCost,
+      pricePerSecond: expectedBid.pricePerSecond,
+      user: getAddress(user.account.address),
+      provider: expectedBid.providerAddr,
+      modelAgentId: expectedBid.modelId,
+      bidID: expectedBid.id,
+      stake: (totalCost * totalSupply) / todaysBudget,
+    };
+
+    // set user balance and approve funds
+    await tokenMOR.write.transfer([
+      user.account.address,
+      expectedSession.stake,
+    ]);
+    await tokenMOR.write.approve(
+      [modelRegistry.address, expectedSession.stake],
+      {
+        account: user.account,
+      },
+    );
+
+    // open session
+    const { msg, signature } = await getProviderApproval(
+      provider,
+      expectedSession.bidID,
+    );
+    const openTx = await sessionRouter.write.openSession(
+      [expectedSession.stake, msg, signature],
+      { account: user.account.address },
+    );
+    const sessionId = await getSessionId(publicClient, hre, openTx);
+
+    // wait till session ends
+    await time.increase(expectedSession.durationSeconds);
+
+    const providerBalanceBefore = await tokenMOR.read.balanceOf([
+      provider.account.address,
+    ]);
+    // close session without dispute
+    const report = await getReport(provider, sessionId, 10);
+    await sessionRouter.write.closeSession([report.msg, report.sig], {
+      account: user.account,
+    });
+
+    const providerBalanceAfter = await tokenMOR.read.balanceOf([
+      provider.account.address,
+    ]);
+
+    const providerEarned = providerBalanceAfter - providerBalanceBefore;
+
+    expect(providerEarned).to.equal(expectedProvider.stake);
+
+    // check provider record if earning was updated
+    const providerRecord = await providerRegistry.read.providerMap([
+      provider.account.address,
+    ]);
+    expect(providerRecord.limitPeriodEarned).to.equal(expectedProvider.stake);
+  });
+
+  it("should reset provider limitPeriodEarned after period", async function () {});
+
+  it("should error with WithdrawableBalanceLimitByStakeReached() if claiming more that stake for a period", async function () {});
 });
