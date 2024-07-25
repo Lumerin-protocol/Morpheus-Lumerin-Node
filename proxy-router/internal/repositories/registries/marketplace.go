@@ -2,6 +2,7 @@ package registries
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/marketplace"
@@ -32,6 +33,35 @@ func NewMarketplace(marketplaceAddr common.Address, client *ethclient.Client, lo
 		client:          client,
 		log:             log,
 	}
+}
+
+func (g *Marketplace) PostModelBid(ctx *bind.TransactOpts, provider string, model [32]byte, pricePerSecond *big.Int) error {
+	fmt.Println("PostModelBid", provider, model, pricePerSecond)
+	tx, err := g.marketplace.PostModelBid(ctx, common.HexToAddress(provider), model, pricePerSecond)
+	if err != nil {
+		return lib.TryConvertGethError(err, marketplace.MarketplaceMetaData)
+	}
+
+	// Wait for the transaction receipt
+	receipt, err := bind.WaitMined(context.Background(), g.client, tx)
+
+	if err != nil {
+		return lib.TryConvertGethError(err, marketplace.MarketplaceMetaData)
+	}
+
+	// Find the event log
+	for _, log := range receipt.Logs {
+		// Check if the log belongs to the OpenSession event
+		_, err := g.marketplace.ParseBidPosted(*log)
+
+		if err != nil {
+			continue // not our event, skip it
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("PostModelBid event not found in transaction logs")
 }
 
 func (g *Marketplace) GetBidById(ctx context.Context, bidId [32]byte) (*marketplace.Bid, error) {

@@ -63,6 +63,7 @@ func CreateHTTPServer(log lib.ILogger, controllers ...Registrable) *gin.Engine {
 	// r.Use(RequestLogger(log))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	r.Any("/debug/pprof/*action", gin.WrapF(pprof.Index))
 
 	for _, c := range controllers {

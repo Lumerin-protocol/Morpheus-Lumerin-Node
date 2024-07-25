@@ -19,7 +19,7 @@ builds:
     no_unique_dist_dir: true
     binary: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}"
     ldflags:
-      - -s -w -X main.version={{.Version}} -X github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/config.Commit={{.Commit}} -X main.date={{.Date}} -X 'github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/config.BuildVersion={{.Version}}'
+      - -s -w -X main.version={{.Version}} -X github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/config.Commit={{.Commit}} -X main.date={{.Date}} -X 'github.com/Lumerin-protocol/Morpheus-Lumerin-Node/proxy-router/internal/config.BuildVersion={{.Version}}'
 
 archives:
   - format: binary

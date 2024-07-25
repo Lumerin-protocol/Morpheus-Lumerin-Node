@@ -2,6 +2,8 @@ package registries
 
 import (
 	"context"
+	"fmt"
+	"math/big"
 
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/providerregistry"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
@@ -55,6 +57,36 @@ func (g *ProviderRegistry) GetAllProviders(ctx context.Context) ([]common.Addres
 	}
 
 	return addresses, providers, nil
+}
+
+func (g *ProviderRegistry) CreateNewProvider(ctx *bind.TransactOpts, address string, addStake uint64, endpoint string) error {
+	bigAddStake := big.NewInt(int64(addStake))
+
+	providerTx, err := g.providerRegistry.ProviderRegister(ctx, common.HexToAddress(address), bigAddStake, endpoint)
+
+	if err != nil {
+		return lib.TryConvertGethError(err, providerregistry.ProviderRegistryMetaData)
+	}
+
+	// Wait for the transaction receipt
+	receipt, err := bind.WaitMined(context.Background(), g.client, providerTx)
+	if err != nil {
+		return lib.TryConvertGethError(err, providerregistry.ProviderRegistryMetaData)
+	}
+
+	// Find the event log
+	for _, log := range receipt.Logs {
+		// Check if the log belongs to the OpenSession event
+		_, err := g.providerRegistry.ParseProviderRegisteredUpdated(*log)
+
+		if err != nil {
+			continue // not our event, skip it
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("OpenSession event not found in transaction logs")
 }
 
 func (g *ProviderRegistry) GetProviderById(ctx context.Context, id common.Address) (*providerregistry.Provider, error) {

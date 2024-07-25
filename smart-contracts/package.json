@@ -34,7 +34,7 @@
     "chai": "^4.2.0",
     "hardhat": "^2.22.6",
     "hardhat-gas-reporter": "^2.1.1",
-    "morpheus-smart-contracts": "git+ssh://github.com/MorpheusAIs/SmartContracts.git#753accd",
+    "morpheus-smart-contracts": "git+ssh://github.com/Lumerin-protocol/SmartContracts.git#753accd",
     "prettier": "^3.2.5",
     "prettier-plugin-solidity": "^1.3.1",
     "solhint": "^5.0.1",

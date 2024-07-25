@@ -1,0 +1,6 @@
+go 1.22.0
+
+use ./launcher
+use ./proxy-router
+use ./api-gateway
+use ./cli

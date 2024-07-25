@@ -5,6 +5,7 @@ package modelregistry
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -241,9 +242,11 @@ func (_ModelRegistry *ModelRegistryCallerSession) ModelExists(id [32]byte) (bool
 //
 // Solidity: function modelGetAll() view returns(bytes32[], (bytes32,uint256,uint256,address,string,string[],uint128,bool)[])
 func (_ModelRegistry *ModelRegistryCaller) ModelGetAll(opts *bind.CallOpts) ([][32]byte, []Model, error) {
+	fmt.Println("modelGetAll")
 	var out []interface{}
 	err := _ModelRegistry.contract.Call(opts, &out, "modelGetAll")
-
+fmt.Println("modelGetAll error: ", err)
+fmt.Println("modelGetAll output: ", out)
 	if err != nil {
 		return *new([][32]byte), *new([]Model), err
 	}
