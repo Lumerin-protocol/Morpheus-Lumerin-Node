@@ -187,6 +187,7 @@ describe("session closeout", function () {
     const [userAvail, userHold] =
       await sessionRouter.read.withdrawableUserStake([
         session.user,
+        0n,
         Number(maxUint8),
       ]);
 

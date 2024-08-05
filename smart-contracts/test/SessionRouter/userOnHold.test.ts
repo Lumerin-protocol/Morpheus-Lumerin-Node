@@ -15,6 +15,7 @@ describe("User on hold tests", () => {
     // right after closeout
     const [available, onHold] = await sessionRouter.read.withdrawableUserStake([
       user.account.address,
+      0n,
       Number(maxUint8),
     ]);
     expect(available).to.equal(0n);
@@ -31,6 +32,7 @@ describe("User on hold tests", () => {
     const [available3, onHold3] =
       await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         Number(maxUint8),
       ]);
     expect(available3).to.equal(0n);
@@ -46,6 +48,7 @@ describe("User on hold tests", () => {
     const [available2, onHold2] =
       await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         Number(maxUint8),
       ]);
     expectAlmostEqual(available2, expectedOnHold, 0.01);
@@ -67,6 +70,7 @@ describe("User on hold tests", () => {
     await time.increaseTo(startOfTomorrow(await time.latest()));
     const [available2] = await sessionRouter.read.withdrawableUserStake([
       user.account.address,
+      0n,
       Number(maxUint8),
     ]);
 

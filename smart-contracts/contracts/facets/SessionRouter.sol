@@ -357,16 +357,23 @@ contract SessionRouter {
   /// @notice returns amount of withdrawable user stake and one on hold
   function withdrawableUserStake(
     address userAddr,
-    uint8 iterations
+    uint256 offset,
+    uint8 limit
   ) external view returns (uint256 avail, uint256 hold) {
-    OnHold[] memory onHold = s.userOnHold[userAddr];
-    iterations = iterations > onHold.length ? uint8(onHold.length) : iterations;
-    for (uint i = 0; i < onHold.length; i++) {
-      uint256 amount = onHold[i].amount;
-      if (block.timestamp < onHold[i].releaseAt) {
-        hold += amount;
+    OnHold[] storage onHold = s.userOnHold[userAddr];
+
+    uint256 length = onHold.length;
+    if (length <= offset) {
+      return (avail, hold);
+    }
+
+    uint8 size = offset + limit > length ? uint8(length - offset) : limit;
+    for (uint i = offset; i < offset + size; i++) {
+      OnHold storage hh = onHold[i];
+      if (block.timestamp < hh.releaseAt) {
+        hold += hh.amount;
       } else {
-        avail += amount;
+        avail += hh.amount;
       }
     }
     return (avail, hold);

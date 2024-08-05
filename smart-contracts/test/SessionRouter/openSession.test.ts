@@ -221,6 +221,7 @@ describe("session actions", function () {
 
       const [avail] = await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         255,
       ]);
       expect(avail > 0).to.be.true;
@@ -245,6 +246,7 @@ describe("session actions", function () {
 
       const [avail2] = await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         255,
       ]);
       expect(avail2).to.be.equal(stake);
@@ -259,6 +261,7 @@ describe("session actions", function () {
 
       const [avail] = await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         255,
       ]);
       expect(avail > 0).to.be.true;
@@ -281,6 +284,7 @@ describe("session actions", function () {
 
       const [avail2] = await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         255,
       ]);
       expect(avail2).to.be.equal(0n);
@@ -295,6 +299,7 @@ describe("session actions", function () {
 
       const [avail] = await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         255,
       ]);
       expect(avail > 0).to.be.true;
@@ -323,6 +328,7 @@ describe("session actions", function () {
       // check all onHold used
       const [avail2] = await sessionRouter.read.withdrawableUserStake([
         user.account.address,
+        0n,
         255,
       ]);
       expect(avail2).to.be.equal(0n);
