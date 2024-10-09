@@ -140,12 +140,10 @@ const createClient = function (createStore) {
     getTodaysBudget: utils.forwardToMainProcess('get-todays-budget'),
     getTokenSupply: utils.forwardToMainProcess('get-supply'),
     // Chat History
+    getChatHistoryTitles: utils.forwardToMainProcess('get-chat-history-titles'),
     getChatHistory: utils.forwardToMainProcess('get-chat-history', 750000),
-    saveChatHistory: utils.forwardToMainProcess('save-chat-history', 750000),
-    getTitles: utils.forwardToMainProcess('get-chat-titles', 750000),
-    saveTitle: utils.forwardToMainProcess('save-chat-title', 750000),
-    deleteTitle: utils.forwardToMainProcess('delete-chat-title', 750000),
-    updateChatTitle: utils.forwardToMainProcess("update-chat-title", 750000),
+    deleteChatHistory: utils.forwardToMainProcess('delete-chat-history', 750000),
+    updateChatHistoryTitle: utils.forwardToMainProcess('update-chat-history-title', 750000),
   }
 
   const api = {

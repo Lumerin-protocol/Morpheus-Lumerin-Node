@@ -103,8 +103,9 @@ func (s *ProxyReceiver) SessionPrompt(ctx context.Context, requestID string, use
 
 	if session.ModelApiType == "prodia" {
 		modelConfig := s.modelConfigLoader.ModelConfigFromID(session.ModelID)
+		lastMessage := req.Messages[len(req.Messages)-1]
 		prodiaReq := &aiengine.ProdiaGenerationRequest{
-			Prompt: req.Messages[0].Content,
+			Prompt: lastMessage.Content,
 			Model:  session.ModelName,
 			ApiUrl: modelConfig.ApiURL,
 			ApiKey: modelConfig.ApiKey,

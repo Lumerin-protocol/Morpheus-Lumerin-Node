@@ -33,6 +33,17 @@ definitions:
     - timestamp
     - user
     type: object
+  proxyapi.Chat:
+    properties:
+      chatId:
+        type: string
+      createdAt:
+        type: integer
+      modelId:
+        type: string
+      title:
+        type: string
+    type: object
   proxyapi.ChatCompletionChoice:
     properties:
       delta:
@@ -66,10 +77,6 @@ definitions:
     properties:
       content:
         type: string
-      multiContent:
-        items:
-          $ref: '#/definitions/proxyapi.ChatMessagePart'
-        type: array
       name:
         description: |-
           This property isn't in the official documentation, but it's in
@@ -108,46 +115,36 @@ definitions:
       type:
         type: string
     type: object
-  proxyapi.ChatMessageImageURL:
+  proxyapi.ChatHistory:
     properties:
-      detail:
-        $ref: '#/definitions/proxyapi.ImageURLDetail'
-      url:
+      messages:
+        items:
+          $ref: '#/definitions/proxyapi.ChatMessage'
+        type: array
+      modelId:
+        type: string
+      title:
         type: string
     type: object
-  proxyapi.ChatMessagePart:
+  proxyapi.ChatMessage:
     properties:
-      image_url:
-        $ref: '#/definitions/proxyapi.ChatMessageImageURL'
-      text:
+      isImageContent:
+        type: boolean
+      prompt:
+        $ref: '#/definitions/proxyapi.OpenAiCompletitionRequest'
+      promptAt:
+        type: integer
+      response:
         type: string
-      type:
-        $ref: '#/definitions/proxyapi.ChatMessagePartType'
+      responseAt:
+        type: integer
     type: object
-  proxyapi.ChatMessagePartType:
-    enum:
-    - text
-    - image_url
-    type: string
-    x-enum-varnames:
-    - ChatMessagePartTypeText
-    - ChatMessagePartTypeImageURL
   proxyapi.FinishReason:
     enum:
     - stop
     type: string
     x-enum-varnames:
     - FinishReasonStop
-  proxyapi.ImageURLDetail:
-    enum:
-    - high
-    - low
-    - auto
-    type: string
-    x-enum-varnames:
-    - ImageURLDetailHigh
-    - ImageURLDetailLow
-    - ImageURLDetailAuto
   proxyapi.InitiateSessionReq:
     properties:
       bidId:
@@ -252,6 +249,11 @@ definitions:
       user:
         type: string
     type: object
+  proxyapi.ResultResponse:
+    properties:
+      result:
+        type: boolean
+    type: object
   proxyapi.TopLogProbs:
     properties:
       bytes:
@@ -262,6 +264,13 @@ definitions:
         type: number
       token:
         type: string
+    type: object
+  proxyapi.UpdateChatTitleReq:
+    properties:
+      title:
+        type: string
+    required:
+    - title
     type: object
   proxyapi.Usage:
     properties:
@@ -1336,6 +1345,11 @@ paths:
         in: header
         name: model_id
         type: string
+      - description: Chat ID
+        format: hex32
+        in: header
+        name: chat_id
+        type: string
       - description: Prompt
         in: body
         name: prompt
@@ -1350,6 +1364,78 @@ paths:
           schema:
             $ref: '#/definitions/proxyapi.ChatCompletionResponse'
       summary: Send Local Or Remote Prompt
+      tags:
+      - chat
+  /v1/chats:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/proxyapi.Chat'
+            type: array
+      summary: Get all chats stored in the system
+      tags:
+      - chat
+  /v1/chats/{id}:
+    delete:
+      parameters:
+      - description: Chat ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proxyapi.ResultResponse'
+      summary: Delete chat by id from storage
+      tags:
+      - chat
+    get:
+      parameters:
+      - description: Chat ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proxyapi.ChatHistory'
+      summary: Get chat by id
+      tags:
+      - chat
+    post:
+      parameters:
+      - description: Chat ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Chat Title
+        in: body
+        name: title
+        required: true
+        schema:
+          $ref: '#/definitions/proxyapi.UpdateChatTitleReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proxyapi.ResultResponse'
+      summary: Update chat title by id
       tags:
       - chat
   /v1/models:

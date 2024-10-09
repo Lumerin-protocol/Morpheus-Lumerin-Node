@@ -15,7 +15,6 @@ import {
   setKey
 } from '../settings'
 import apiGateway from '../apiGateway';
-import chatHistory from '../history/chat-history';
 
 const validatePassword = (data) => auth.isValidPassword(data)
 
@@ -116,5 +115,4 @@ export default {
   getAutoAdjustPriceData,
   setAutoAdjustPriceData,
   ...apiGateway,
-  ...chatHistory
 }

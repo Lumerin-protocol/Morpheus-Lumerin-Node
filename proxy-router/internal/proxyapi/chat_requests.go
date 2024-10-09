@@ -27,9 +27,9 @@ type ChatMessagePart struct {
 }
 
 type ChatCompletionMessage struct {
-	Role         string `json:"role"`
-	Content      string `json:"content"`
-	MultiContent []ChatMessagePart
+	Role    string `json:"role"`
+	Content string `json:"content"`
+	// MultiContent []ChatMessagePart `json:"multiContent",omitempty`
 
 	// This property isn't in the official documentation, but it's in
 	// the documentation for the official library for python:

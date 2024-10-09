@@ -225,8 +225,15 @@ func start() error {
 
 	blockchainController := blockchainapi.NewBlockchainController(blockchainApi, log)
 
-	chatStoragePath := filepath.Join(cfg.Proxy.StoragePath, "chat")
-	chatStorage := proxyapi.NewChatStorage(chatStoragePath)
+	var chatStorage proxyapi.ChatStorageInterface
+	if cfg.Proxy.StoreChatContext {
+		chatStoragePath := filepath.Join(cfg.Proxy.StoragePath, "chats")
+		chatStorage = proxyapi.NewChatStorage(chatStoragePath)
+	} else {
+		log.Warnf("chat context storage is disabled")
+		chatStorage = proxyapi.NewNoOpChatStorage()
+	}
+
 	proxyController := proxyapi.NewProxyController(proxyRouterApi, aiEngine, chatStorage)
 	walletController := walletapi.NewWalletController(wallet)
 	systemController := system.NewSystemController(&cfg, wallet, sysConfig, appStartTime, chainID, log)

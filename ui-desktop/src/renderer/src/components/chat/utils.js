@@ -12,6 +12,11 @@ export const makeId = (length) => {
     return result;
 }
 
+export const generateHashId = (length = 64) => {
+    const hex = [...Array(length)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+    return `0x${hex}`;
+}
+
 export const getHashCode = (string) => {
     var hash = 0;
     for (var i = 0; i < string.length; i++) {

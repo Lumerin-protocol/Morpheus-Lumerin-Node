@@ -46,6 +46,7 @@ type Config struct {
 		Address          string `env:"PROXY_ADDRESS" flag:"proxy-address" validate:"required,hostname_port"`
 		MaxCachedDests   int    `env:"PROXY_MAX_CACHED_DESTS" flag:"proxy-max-cached-dests" validate:"required,number" desc:"maximum number of cached destinations per proxy"`
 		StoragePath      string `env:"PROXY_STORAGE_PATH"    flag:"proxy-storage-path"    validate:"omitempty,dirpath" desc:"enables file storage and sets the folder path"`
+		StoreChatContext bool   `env:"PROXY_STORE_CHAT_CONTEXT" flag:"proxy-store-chat-context" desc:"store chat context in the proxy storage"`
 		ModelsConfigPath string `env:"MODELS_CONFIG_PATH" flag:"models-config-path" validate:"omitempty"`
 	}
 	System struct {

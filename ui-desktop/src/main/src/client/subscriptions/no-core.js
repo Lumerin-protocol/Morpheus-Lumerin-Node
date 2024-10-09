@@ -32,12 +32,10 @@ const listeners = {
   "get-todays-budget": handlers.getTodaysBudget,
   "get-supply": handlers.getTokenSupply,
   // Chat history
-  "get-chat-history": handlers.getChatHitory,
-  "save-chat-history": handlers.saveChatHistory,
-  "get-chat-titles": handlers.getTitles,
-  "save-chat-title": handlers.saveTitle,
-  "update-chat-title": handlers.updateChatTitle,
-  "delete-chat-title": handlers.deleteTitle
+  "get-chat-history-titles": handlers.getChatHistoryTitles,
+  "get-chat-history": handlers.getChatHistory,
+  "delete-chat-history": handlers.deleteChatHistory,
+  "update-chat-history-title": handlers.updateChatHistoryTitle,
 }
 
 // Subscribe to messages where no core has to react

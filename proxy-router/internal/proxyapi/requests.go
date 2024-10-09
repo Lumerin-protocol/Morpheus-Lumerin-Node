@@ -24,10 +24,19 @@ type PromptReq struct {
 type PromptHead struct {
 	SessionID lib.Hash `header:"session_id" validate:"hex32"`
 	ModelID   lib.Hash `header:"model_id" validate:"hex32"`
+	ChatID    lib.Hash `header:"chat_id" validate:"hex32"`
 }
 
 type InferenceRes struct {
 	Signature lib.HexString   `json:"signature,omitempty" validate:"required,hexadecimal"`
 	Message   json.RawMessage `json:"message" validate:"required"`
 	Timestamp uint64          `json:"timestamp" validate:"required,timestamp"`
+}
+
+type UpdateChatTitleReq struct {
+	Title string `json:"title" validate:"required"`
+}
+
+type ResultResponse struct {
+	Result bool `json:"result"`
 }
