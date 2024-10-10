@@ -10,37 +10,26 @@ import (
 	"time"
 
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/config"
-	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
+	i "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 	"github.com/gin-gonic/gin"
 )
 
-type HealthCheckResponse struct {
-	Status  string
-	Version string
-	Uptime  string
-}
-
 type SystemController struct {
 	config       *config.Config
-	wallet       interfaces.Wallet
+	wallet       i.Wallet
+	ethRPC       i.RPCEndpoints
 	sysConfig    *SystemConfigurator
 	appStartTime time.Time
 	chainID      *big.Int
 	log          lib.ILogger
 }
 
-type ConfigResponse struct {
-	Version       string
-	Commit        string
-	DerivedConfig interface{}
-	Config        interface{}
-}
-
-func NewSystemController(config *config.Config, wallet interfaces.Wallet, sysConfig *SystemConfigurator, appStartTime time.Time, chainID *big.Int, log lib.ILogger) *SystemController {
+func NewSystemController(config *config.Config, wallet i.Wallet, ethRPC i.RPCEndpoints, sysConfig *SystemConfigurator, appStartTime time.Time, chainID *big.Int, log lib.ILogger) *SystemController {
 	c := &SystemController{
 		config:       config,
 		wallet:       wallet,
+		ethRPC:       ethRPC,
 		sysConfig:    sysConfig,
 		appStartTime: appStartTime,
 		chainID:      chainID,
@@ -50,17 +39,19 @@ func NewSystemController(config *config.Config, wallet interfaces.Wallet, sysCon
 	return c
 }
 
-func (s *SystemController) RegisterRoutes(r interfaces.Router) {
+func (s *SystemController) RegisterRoutes(r i.Router) {
 	r.GET("/healthcheck", s.HealthCheck)
 	r.GET("/config", s.GetConfig)
 	r.GET("/files", s.GetFiles)
+
+	r.POST("/config/ethNode", s.SetEthNode)
 }
 
 // HealthCheck godoc
 //
 //	@Summary		Healthcheck example
 //	@Description	do ping
-//	@Tags			healthcheck
+//	@Tags			system
 //	@Produce		json
 //	@Success		200	{object}	HealthCheckResponse
 //	@Router			/healthcheck [get]
@@ -76,7 +67,7 @@ func (s *SystemController) HealthCheck(ctx *gin.Context) {
 //
 //	@Summary		Get Config
 //	@Description	Return the current config of proxy router
-//	@Tags			healthcheck
+//	@Tags			system
 //	@Produce		json
 //	@Success		200	{object}	ConfigResponse
 //	@Router			/config [get]
@@ -98,6 +89,7 @@ func (s *SystemController) GetConfig(ctx *gin.Context) {
 		DerivedConfig: config.DerivedConfig{
 			WalletAddress: addr,
 			ChainID:       s.chainID,
+			EthNodeURLs:   s.ethRPC.GetURLs(),
 		},
 	})
 }
@@ -106,7 +98,7 @@ func (s *SystemController) GetConfig(ctx *gin.Context) {
 //
 //	@Summary		Get files
 //	@Description	Returns opened files
-//	@Tags			healthcheck
+//	@Tags			system
 //	@Produce		json
 //	@Success		200	{object}	[]FD
 //	@Router			/files [get]
@@ -138,6 +130,50 @@ func (s *SystemController) GetFiles(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{})
 	return
+}
+
+// SetEthNode godoc
+//
+//	@Summary		Set Eth Node URLs
+//	@Description	Set the Eth Node URLs
+//	@Tags			system
+//	@Accept			json
+//	@Produce		json
+//	@Param			urls	body		SetEthNodeURLReq	true	"URLs"
+//	@Success		200		{object}	ConfigResponse
+//	@Router			/config/ethNode [post]
+func (s *SystemController) SetEthNode(ctx *gin.Context) {
+	var req SetEthNodeURLReq
+	if err := ctx.BindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := s.ethRPC.SetURLs(req.URLs)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// DeleteEthNode godoc
+//
+//	@Summary		Delete Eth Node URLs
+//	@Description	Delete the Eth Node URLs
+//	@Tags			system
+//	@Produce		json
+//	@Success		200	{object}	ConfigResponse
+//	@Router			/config/ethNode [delete]
+func (c *SystemController) RemoveEthNode(ctx *gin.Context) {
+	err := c.ethRPC.RemoveURLs()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func writeFiles(writer io.Writer, files []FD) error {

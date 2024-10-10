@@ -21,9 +21,10 @@ type EventsListener struct {
 	client            bind.ContractFilterer
 	wallet            interfaces.Wallet
 	modelConfigLoader *config.ModelConfigLoader
+	logWatcher        contracts.LogWatcher
 }
 
-func NewEventsListener(client bind.ContractFilterer, store *storages.SessionStorage, sessionRouter *registries.SessionRouter, wallet interfaces.Wallet, modelConfigLoader *config.ModelConfigLoader, log *lib.Logger) *EventsListener {
+func NewEventsListener(client bind.ContractFilterer, store *storages.SessionStorage, sessionRouter *registries.SessionRouter, wallet interfaces.Wallet, modelConfigLoader *config.ModelConfigLoader, logWatcher contracts.LogWatcher, log *lib.Logger) *EventsListener {
 	return &EventsListener{
 		store:             store,
 		log:               log,
@@ -31,6 +32,7 @@ func NewEventsListener(client bind.ContractFilterer, store *storages.SessionStor
 		client:            client,
 		wallet:            wallet,
 		modelConfigLoader: modelConfigLoader,
+		logWatcher:        logWatcher,
 	}
 }
 
@@ -39,7 +41,7 @@ func (e *EventsListener) Run(ctx context.Context) error {
 		_ = e.log.Close()
 	}()
 
-	sub, err := contracts.WatchContractEvents(ctx, e.client, e.sessionRouter.GetContractAddress(), contracts.CreateEventMapper(contracts.BlockchainEventFactory, e.sessionRouter.GetABI()), e.log)
+	sub, err := e.logWatcher.Watch(ctx, e.sessionRouter.GetContractAddress(), contracts.CreateEventMapper(contracts.SessionRouterEventFactory, e.sessionRouter.GetABI()), nil)
 	if err != nil {
 		return err
 	}
@@ -57,7 +59,7 @@ func (e *EventsListener) Run(ctx context.Context) error {
 			}
 		case err := <-sub.Err():
 			e.log.Errorf("error in event listener: %s", err)
-			// return err
+			return err
 		}
 	}
 }

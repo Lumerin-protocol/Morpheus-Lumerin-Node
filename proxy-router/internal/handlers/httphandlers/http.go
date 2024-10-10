@@ -49,7 +49,7 @@ func CreateHTTPServer(log lib.ILogger, controllers ...Registrable) *gin.Engine {
 		panic(err)
 	}
 
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
 

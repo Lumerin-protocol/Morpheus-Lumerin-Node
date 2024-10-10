@@ -36,3 +36,9 @@ test-integration:
 
 swagger:
 	swag fmt -g ./internal/handlers/httphandlers/http.go && swag init -g ./internal/handlers/httphandlers/http.go --parseInternal 
+
+mocks:
+	mockery
+
+reset-keychain:
+	go run cmd/main.go --reset-keychain

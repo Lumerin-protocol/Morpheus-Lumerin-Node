@@ -639,6 +639,15 @@ definitions:
       version:
         type: string
     type: object
+  system.SetEthNodeURLReq:
+    properties:
+      urls:
+        items:
+          type: string
+        type: array
+    required:
+    - urls
+    type: object
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
@@ -1229,7 +1238,41 @@ paths:
             $ref: '#/definitions/system.ConfigResponse'
       summary: Get Config
       tags:
-      - healthcheck
+      - system
+  /config/ethNode:
+    delete:
+      description: Delete the Eth Node URLs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/system.ConfigResponse'
+      summary: Delete Eth Node URLs
+      tags:
+      - system
+    post:
+      consumes:
+      - application/json
+      description: Set the Eth Node URLs
+      parameters:
+      - description: URLs
+        in: body
+        name: urls
+        required: true
+        schema:
+          $ref: '#/definitions/system.SetEthNodeURLReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/system.ConfigResponse'
+      summary: Set Eth Node URLs
+      tags:
+      - system
   /files:
     get:
       description: Returns opened files
@@ -1244,7 +1287,7 @@ paths:
             type: array
       summary: Get files
       tags:
-      - healthcheck
+      - system
   /healthcheck:
     get:
       description: do ping
@@ -1257,7 +1300,7 @@ paths:
             $ref: '#/definitions/system.HealthCheckResponse'
       summary: Healthcheck example
       tags:
-      - healthcheck
+      - system
   /proxy/sessions/{id}/providerClaim:
     post:
       description: Claim provider balance from session

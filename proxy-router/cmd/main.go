@@ -19,13 +19,15 @@ import (
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/proxyapi"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/proxyctl"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/ethclient"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/keychain"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/registries"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/transport"
 	wlt "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/wallet"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/storages"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/system"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/walletapi"
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	docs "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/docs"
 )
@@ -182,13 +184,43 @@ func start() error {
 		os.Exit(1)
 	}()
 
-	ethClient, err := ethclient.DialContext(ctx, cfg.Blockchain.EthNodeAddress)
+	keychainStorage := keychain.NewKeychain()
+
+	if cfg.App.ResetKeychain {
+		appLog.Warnf("Resetting keychain...")
+		wallet := wlt.NewKeychainWallet(keychainStorage)
+		err = wallet.DeleteWallet()
+		if err != nil {
+			appLog.Warnf("Failed to delete wallet\n%s", err)
+		} else {
+			appLog.Info("Wallet deleted")
+		}
+
+		ethNodeStorage := ethclient.NewRPCClientStoreKeychain(keychainStorage, nil, log)
+		err = ethNodeStorage.RemoveURLs()
+		if err != nil {
+			appLog.Warnf("Failed to remove eth node urls\n%s", err)
+		} else {
+			appLog.Info("Eth node urls removed")
+		}
+	}
+
+	var ethNodeAddresses []string
+	if cfg.Blockchain.EthNodeAddress != "" {
+		ethNodeAddresses = []string{cfg.Blockchain.EthNodeAddress}
+	}
+	rpcClientStore, err := ethclient.ConfigureRPCClientStore(keychainStorage, ethNodeAddresses, cfg.Blockchain.ChainID, log.Named("RPC"))
 	if err != nil {
 		return lib.WrapError(ErrConnectToEthNode, err)
 	}
+
+	ethClient := ethclient.NewClient(rpcClientStore.GetClient())
 	chainID, err := ethClient.ChainID(ctx)
 	if err != nil {
 		return lib.WrapError(ErrConnectToEthNode, err)
+	}
+	if cfg.Blockchain.ChainID != 0 && int(chainID.Uint64()) != cfg.Blockchain.ChainID {
+		return lib.WrapError(ErrConnectToEthNode, fmt.Errorf("configured chainID (%d) does not match eth node chain ID (%s)", cfg.Blockchain.ChainID, chainID))
 	}
 	appLog.Infof("connected to ethereum node: %s, chainID: %d", cfg.Blockchain.EthNodeAddress, chainID)
 
@@ -205,8 +237,17 @@ func start() error {
 		wallet = wlt.NewEnvWallet(*cfg.Marketplace.WalletPrivateKey)
 		log.Warnf("Using env wallet. Private key persistance unavailable")
 	} else {
-		wallet = wlt.NewKeychainWallet()
+		wallet = wlt.NewKeychainWallet(keychainStorage)
 		log.Infof("Using keychain wallet")
+	}
+
+	var logWatcher contracts.LogWatcher
+	if cfg.Blockchain.UseSubscriptions {
+		logWatcher = contracts.NewLogWatcherSubscription(ethClient, cfg.Blockchain.MaxReconnects, log)
+		appLog.Infof("using websocket log subscription for blockchain events")
+	} else {
+		logWatcher = contracts.NewLogWatcherPolling(ethClient, cfg.Blockchain.PollingInterval, cfg.Blockchain.MaxReconnects, log)
+		appLog.Infof("using polling for blockchain events")
 	}
 
 	modelConfigLoader := config.NewModelConfigLoader(cfg.Proxy.ModelsConfigPath, log)
@@ -221,7 +262,7 @@ func start() error {
 
 	sessionRouter := registries.NewSessionRouter(*cfg.Marketplace.DiamondContractAddress, ethClient, log)
 
-	eventListener := blockchainapi.NewEventsListener(ethClient, sessionStorage, sessionRouter, wallet, modelConfigLoader, log)
+	eventListener := blockchainapi.NewEventsListener(ethClient, sessionStorage, sessionRouter, wallet, modelConfigLoader, logWatcher, log)
 
 	blockchainController := blockchainapi.NewBlockchainController(blockchainApi, log)
 
@@ -229,7 +270,7 @@ func start() error {
 	chatStorage := proxyapi.NewChatStorage(chatStoragePath)
 	proxyController := proxyapi.NewProxyController(proxyRouterApi, aiEngine, chatStorage)
 	walletController := walletapi.NewWalletController(wallet)
-	systemController := system.NewSystemController(&cfg, wallet, sysConfig, appStartTime, chainID, log)
+	systemController := system.NewSystemController(&cfg, wallet, rpcClientStore, sysConfig, appStartTime, chainID, log)
 
 	apiBus := apibus.NewApiBus(blockchainController, proxyController, walletController, systemController)
 	httpHandler := httphandlers.CreateHTTPServer(log, apiBus)

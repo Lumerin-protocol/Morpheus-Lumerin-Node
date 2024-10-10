@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"runtime"
+	"time"
 
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,18 +13,26 @@ import (
 type DerivedConfig struct {
 	WalletAddress common.Address
 	ChainID       *big.Int
+	EthNodeURLs   []string
 }
 
 // Validation tags described here: https://pkg.go.dev/github.com/go-playground/validator/v10
 type Config struct {
+	App struct {
+		ResetKeychain bool `env:"APP_RESET_KEYCHAIN" flag:"app-reset-keychain" desc:"reset keychain on start"`
+	}
 	AIEngine struct {
 		OpenAIBaseURL string `env:"OPENAI_BASE_URL"     flag:"open-ai-base-url"   validate:"required,url"`
 		OpenAIKey     string `env:"OPENAI_API_KEY"      flag:"open-ai-api-key"`
 	}
 	Blockchain struct {
-		EthNodeAddress string `env:"ETH_NODE_ADDRESS"   flag:"eth-node-address"   validate:"required,url"`
-		EthLegacyTx    bool   `env:"ETH_NODE_LEGACY_TX" flag:"eth-node-legacy-tx" desc:"use it to disable EIP-1559 transactions"`
-		ExplorerApiUrl string `env:"EXPLORER_API_URL"   flag:"explorer-api-url"   validate:"required,url"`
+		ChainID          int           `env:"ETH_NODE_CHAIN_ID"  flag:"eth-node-chain-id"  validate:"number"`
+		EthNodeAddress   string        `env:"ETH_NODE_ADDRESS"   flag:"eth-node-address"   validate:"omitempty,url"`
+		EthLegacyTx      bool          `env:"ETH_NODE_LEGACY_TX" flag:"eth-node-legacy-tx" desc:"use it to disable EIP-1559 transactions"`
+		ExplorerApiUrl   string        `env:"EXPLORER_API_URL"   flag:"explorer-api-url"   validate:"required,url"`
+		UseSubscriptions bool          `env:"ETH_NODE_USE_SUBSCRIPTIONS"  flag:"eth-node-use-subscriptions"  desc:"set it to true to enable subscriptions for blockchain events, otherwise default polling will be used"`
+		PollingInterval  time.Duration `env:"ETH_NODE_POLLING_INTERVAL" flag:"eth-node-polling-interval" validate:"omitempty,duration" desc:"interval for polling eth node for new events"`
+		MaxReconnects    int           `env:"ETH_NODE_MAX_RECONNECTS" flag:"eth-node-max-reconnects" validate:"omitempty,gte=0" desc:"max reconnects to eth node"`
 	}
 	Environment string `env:"ENVIRONMENT" flag:"environment"`
 	Marketplace struct {
@@ -66,6 +75,14 @@ type Config struct {
 func (cfg *Config) SetDefaults() {
 	if cfg.Environment == "" {
 		cfg.Environment = "development"
+	}
+
+	// Blockchain
+	if cfg.Blockchain.MaxReconnects == 0 {
+		cfg.Blockchain.MaxReconnects = 30
+	}
+	if cfg.Blockchain.PollingInterval == 0 {
+		cfg.Blockchain.PollingInterval = 10 * time.Second
 	}
 
 	// Log

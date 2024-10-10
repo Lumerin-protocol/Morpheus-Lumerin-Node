@@ -17,8 +17,6 @@ type EventFactory func(name string) interface{}
 
 func CreateEventMapper(eventFactory EventFactory, abi *abi.ABI) func(log types.Log) (interface{}, error) {
 	return func(log types.Log) (interface{}, error) {
-		fmt.Println("log.Topics[0]:", log.Topics[0])
-		fmt.Println("abi", abi.Events)
 		namedEvent, err := abi.EventByID(log.Topics[0])
 		if err != nil {
 			return nil, err

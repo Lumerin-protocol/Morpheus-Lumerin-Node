@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	i "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/keychain"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
@@ -21,14 +22,14 @@ var (
 )
 
 type KeychainWallet struct {
-	storage   *keychain.Keychain
+	storage   i.KeyValueStorage
 	updatedCh chan struct{}
 	mutex     sync.Mutex
 }
 
-func NewKeychainWallet() *KeychainWallet {
+func NewKeychainWallet(keychain i.KeyValueStorage) *KeychainWallet {
 	return &KeychainWallet{
-		storage:   keychain.NewKeychain(),
+		storage:   keychain,
 		updatedCh: make(chan struct{}),
 	}
 }
