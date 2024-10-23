@@ -4,11 +4,19 @@ import (
 	"math"
 	"math/big"
 
-	m "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/marketplace"
+	m "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/marketplace"
+	s "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/sessionrouter"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func sampleDataTPS() ([][32]byte, []m.Bid, []m.ProviderModelStats, m.ModelStats) {
+type ModelStats struct {
+	TpsScaled1000 s.LibSDSD
+	TtftMs        s.LibSDSD
+	TotalDuration s.LibSDSD
+	Count         int
+}
+
+func sampleDataTPS() ([][32]byte, []m.IBidStorageBid, []s.IStatsStorageProviderModelStats, ModelStats) {
 	modelID := common.HexToHash("0x01")
 	bidIds := [][32]byte{
 		{0x01},
@@ -16,11 +24,11 @@ func sampleDataTPS() ([][32]byte, []m.Bid, []m.ProviderModelStats, m.ModelStats)
 		{0x03},
 	}
 
-	bids := []m.Bid{
+	bids := []m.IBidStorageBid{
 		{
 			PricePerSecond: ToDecimal(10, DecimalsMOR),
 			Provider:       common.HexToAddress("0x01"),
-			ModelAgentId:   modelID,
+			ModelId:        modelID,
 			Nonce:          common.Big0,
 			CreatedAt:      common.Big1,
 			DeletedAt:      common.Big0,
@@ -28,7 +36,7 @@ func sampleDataTPS() ([][32]byte, []m.Bid, []m.ProviderModelStats, m.ModelStats)
 		{
 			PricePerSecond: ToDecimal(10, DecimalsMOR),
 			Provider:       common.HexToAddress("0x02"),
-			ModelAgentId:   modelID,
+			ModelId:        modelID,
 			Nonce:          common.Big0,
 			CreatedAt:      common.Big1,
 			DeletedAt:      common.Big0,
@@ -36,39 +44,39 @@ func sampleDataTPS() ([][32]byte, []m.Bid, []m.ProviderModelStats, m.ModelStats)
 		{
 			PricePerSecond: ToDecimal(10, DecimalsMOR),
 			Provider:       common.HexToAddress("0x03"),
-			ModelAgentId:   modelID,
+			ModelId:        modelID,
 			Nonce:          common.Big0,
 			CreatedAt:      common.Big1,
 			DeletedAt:      common.Big0,
 		},
 	}
-	pmStats := []m.ProviderModelStats{
+	pmStats := []s.IStatsStorageProviderModelStats{
 		{
-			TpsScaled1000: m.LibSDSD{Mean: 10, SqSum: 100},
-			TtftMs:        m.LibSDSD{Mean: 20, SqSum: 200},
+			TpsScaled1000: s.LibSDSD{Mean: 10, SqSum: 100},
+			TtftMs:        s.LibSDSD{Mean: 20, SqSum: 200},
 			TotalDuration: 30,
 			SuccessCount:  6,
 			TotalCount:    10,
 		},
 		{
-			TpsScaled1000: m.LibSDSD{Mean: 20, SqSum: 100},
-			TtftMs:        m.LibSDSD{Mean: 20, SqSum: 200},
+			TpsScaled1000: s.LibSDSD{Mean: 20, SqSum: 100},
+			TtftMs:        s.LibSDSD{Mean: 20, SqSum: 200},
 			TotalDuration: 30,
 			SuccessCount:  6,
 			TotalCount:    10,
 		},
 		{
-			TpsScaled1000: m.LibSDSD{Mean: 30, SqSum: 100},
-			TtftMs:        m.LibSDSD{Mean: 20, SqSum: 200},
+			TpsScaled1000: s.LibSDSD{Mean: 30, SqSum: 100},
+			TtftMs:        s.LibSDSD{Mean: 20, SqSum: 200},
 			TotalDuration: 30,
 			SuccessCount:  6,
 			TotalCount:    10,
 		},
 	}
-	mStats := m.ModelStats{
-		TpsScaled1000: m.LibSDSD{Mean: 20, SqSum: 100},
-		TtftMs:        m.LibSDSD{Mean: 20, SqSum: 200},
-		TotalDuration: m.LibSDSD{Mean: 30, SqSum: 300},
+	mStats := ModelStats{
+		TpsScaled1000: s.LibSDSD{Mean: 20, SqSum: 100},
+		TtftMs:        s.LibSDSD{Mean: 20, SqSum: 200},
+		TotalDuration: s.LibSDSD{Mean: 30, SqSum: 300},
 		Count:         3,
 	}
 

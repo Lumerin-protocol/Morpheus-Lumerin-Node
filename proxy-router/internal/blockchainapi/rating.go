@@ -4,12 +4,13 @@ import (
 	"math"
 	"sort"
 
-	m "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/marketplace"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/blockchainapi/structs"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
+	m "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/marketplace"
+	s "github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/sessionrouter"
 )
 
-func rateBids(bidIds [][32]byte, bids []m.Bid, pmStats []m.ProviderModelStats, mStats m.ModelStats, log lib.ILogger) []structs.ScoredBid {
+func rateBids(bidIds [][32]byte, bids []m.IBidStorageBid, pmStats []s.IStatsStorageProviderModelStats, mStats ModelStats, log lib.ILogger) []structs.ScoredBid {
 	scoredBids := make([]structs.ScoredBid, len(bids))
 
 	for i := range bids {
@@ -22,7 +23,7 @@ func rateBids(bidIds [][32]byte, bids []m.Bid, pmStats []m.ProviderModelStats, m
 			Bid: structs.Bid{
 				Id:             bidIds[i],
 				Provider:       bids[i].Provider,
-				ModelAgentId:   bids[i].ModelAgentId,
+				ModelAgentId:   bids[i].ModelId,
 				PricePerSecond: &lib.BigInt{Int: *(bids[i].PricePerSecond)},
 				Nonce:          &lib.BigInt{Int: *(bids[i].Nonce)},
 				CreatedAt:      &lib.BigInt{Int: *(bids[i].CreatedAt)},
@@ -40,7 +41,7 @@ func rateBids(bidIds [][32]byte, bids []m.Bid, pmStats []m.ProviderModelStats, m
 	return scoredBids
 }
 
-func getScore(bid m.Bid, pmStats m.ProviderModelStats, mStats m.ModelStats) float64 {
+func getScore(bid m.IBidStorageBid, pmStats s.IStatsStorageProviderModelStats, mStats ModelStats) float64 {
 	tpsWeight, ttftWeight, durationWeight, successWeight := 0.27, 0.11, 0.27, 0.35
 	count := int64(mStats.Count)
 
@@ -66,7 +67,7 @@ func ratioScore(num, denom uint32) float64 {
 }
 
 // normZIndex normalizes the value using z-index
-func normZIndex(pmMean int64, mSD m.LibSDSD, obsNum int64) float64 {
+func normZIndex(pmMean int64, mSD s.LibSDSD, obsNum int64) float64 {
 	sd := getSD(mSD, obsNum)
 	if sd == 0 {
 		return 0
@@ -81,11 +82,11 @@ func normRange(input float64, normRange float64) float64 {
 	return cutRange01((input + normRange) / (2.0 * normRange))
 }
 
-func getSD(sd m.LibSDSD, obsNum int64) float64 {
+func getSD(sd s.LibSDSD, obsNum int64) float64 {
 	return math.Sqrt(getVariance(sd, obsNum))
 }
 
-func getVariance(sd m.LibSDSD, obsNum int64) float64 {
+func getVariance(sd s.LibSDSD, obsNum int64) float64 {
 	if obsNum <= 1 {
 		return 0
 	}

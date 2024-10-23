@@ -1,0 +1,39 @@
+{
+  "MOR": "0x34a285a1b1c166420df5b6630132542923b5b27e",
+  "fundingAccount": "0x19ec1E4b714990620edf41fE28e9a1552953a7F4",
+  "providerMinStake": "200000000000000000",
+  "modelMinStake": "100000000000000000",
+  "marketplaceBidFee": "300000000000000000",
+  "pools": [
+    {
+      "payoutStart": 1707393600,
+      "decreaseInterval": 86400,
+      "initialReward": "3456000000000000000000",
+      "rewardDecrease": "592558728240000000"
+    },
+    {
+      "payoutStart": 1707393600,
+      "decreaseInterval": 86400,
+      "initialReward": "3456000000000000000000",
+      "rewardDecrease": "592558728240000000"
+    },
+    {
+      "payoutStart": 1707393600,
+      "decreaseInterval": 86400,
+      "initialReward": "3456000000000000000000",
+      "rewardDecrease": "592558728240000000"
+    },
+    {
+      "payoutStart": 1707393600,
+      "decreaseInterval": 86400,
+      "initialReward": "3456000000000000000000",
+      "rewardDecrease": "592558728240000000"
+    },
+    {
+      "payoutStart": 1707393600,
+      "decreaseInterval": 86400,
+      "initialReward": "576000000000000000000",
+      "rewardDecrease": "98759788040000000"
+    }
+  ]
+}

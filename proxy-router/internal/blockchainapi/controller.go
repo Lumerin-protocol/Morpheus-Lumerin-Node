@@ -104,7 +104,6 @@ func (c *BlockchainController) getProviderClaimableBalance(ctx *gin.Context) {
 //	@Description	Claim provider balance from session
 //	@Tags			sessions
 //	@Produce		json
-//	@Param			claim	body		structs.AmountReq	true	"Claim"
 //	@Param			id		path		string				true	"Session ID"
 //	@Success		200		{object}	structs.TxRes
 //	@Router			/proxy/sessions/{id}/providerClaim [post]
@@ -117,14 +116,7 @@ func (c *BlockchainController) claimProviderBalance(ctx *gin.Context) {
 		return
 	}
 
-	_, amount, err := c.getSendParams(ctx)
-	if err != nil {
-		c.log.Error(err)
-		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
-		return
-	}
-
-	txHash, err := c.service.ClaimProviderBalance(ctx, params.ID.Hash, amount)
+	txHash, err := c.service.ClaimProviderBalance(ctx, params.ID.Hash)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -266,7 +258,14 @@ func (c *BlockchainController) getActiveBidsByProvider(ctx *gin.Context) {
 		return
 	}
 
-	bids, err := c.service.GetActiveBidsByProvider(ctx, params.ID.Address)
+	offset, limit, err := getOffsetLimit(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	bids, err := c.service.GetActiveBidsByProvider(ctx, params.ID.Address, offset, limit)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -353,7 +352,14 @@ func (c *BlockchainController) getActiveBidsByModel(ctx *gin.Context) {
 		return
 	}
 
-	bids, err := c.service.GetActiveBidsByModel(ctx, params.ID.Hash)
+	offset, limit, err := getOffsetLimit(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	bids, err := c.service.GetActiveBidsByModel(ctx, params.ID.Hash, offset, limit)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -860,19 +866,10 @@ func (c *BlockchainController) createProvider(ctx *gin.Context) {
 //	@Summary	Deregister Provider
 //	@Tags		providers
 //	@Produce	json
-//	@Param		id	path		string	true	"Provider Address"
 //	@Success	200	{object}	structs.TxRes
 //	@Router		/blockchain/providers/{id} [delete]
 func (c *BlockchainController) deregisterProvider(ctx *gin.Context) {
-	var params structs.PathEthAddrID
-	err := ctx.ShouldBindUri(&params)
-	if err != nil {
-		c.log.Error(err)
-		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
-		return
-	}
-
-	txHash, err := c.service.DeregisterProdiver(ctx, params.ID.Address)
+	txHash, err := c.service.DeregisterProdiver(ctx)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
