@@ -38,8 +38,7 @@ func NewTCPHandler(
 				sourceLog.Errorf("Error sending message: %s", err)
 				return err
 			}
-			sourceLog.Debug("sent message")
-			return err
+			return nil
 		})
 		if err != nil {
 			sourceLog.Errorf("Error handling message: %s\nMessage: %s\n", err, msg)

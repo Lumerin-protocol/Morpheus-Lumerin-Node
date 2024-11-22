@@ -174,7 +174,7 @@ func (s *ProxyReceiver) SessionRequest(ctx context.Context, msgID string, reqID 
 }
 
 func (s *ProxyReceiver) SessionReport(ctx context.Context, msgID string, reqID string, session *storages.Session, sourceLog lib.ILogger) (*msg.RpcResponse, error) {
-	sourceLog.Debugf("Received session report request for %s, timestamp: %s", session.Id)
+	sourceLog.Debugf("received session report request for %s", session.Id)
 
 	tps := 0
 	ttft := 0

@@ -468,8 +468,6 @@ func (p *ProxyServiceSender) rpcRequestStreamV2(
 			}
 		}
 
-		p.log.Debugf("Received stream msg: %v", msg)
-
 		if msg.Error != nil {
 			return nil, ttftMs, totalTokens, lib.WrapError(ErrResponseErr, fmt.Errorf("error: %v, data: %v", msg.Error.Message, msg.Error.Data))
 		}

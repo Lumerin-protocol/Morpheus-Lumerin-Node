@@ -98,7 +98,7 @@ func (s *MORRPCController) sessionPrompt(ctx context.Context, msg m.RPCMessage, 
 		return lib.WrapError(ErrValidation, err)
 	}
 
-	sourceLog.Debugf("Received prompt from session %s, timestamp: %s", req.SessionID, req.Timestamp)
+	sourceLog.Debugf("received prompt from session %s, timestamp: %d", req.SessionID, req.Timestamp)
 	session, err := s.sessionRepo.GetSession(ctx, req.SessionID)
 	if err != nil {
 		return fmt.Errorf("session cannot be loaded %s", err)

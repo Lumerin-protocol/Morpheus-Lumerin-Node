@@ -75,6 +75,7 @@ func (a *AiEngine) GetLocalModels() ([]LocalModel, error) {
 			Name:           model.ModelName,
 			Model:          model.ModelName,
 			ApiType:        model.ApiType,
+			ApiUrl:         model.ApiURL,
 			Slots:          model.ConcurrentSlots,
 			CapacityPolicy: model.CapacityPolicy,
 		})

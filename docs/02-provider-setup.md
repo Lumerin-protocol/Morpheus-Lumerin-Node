@@ -18,7 +18,7 @@
     2. Source Code: 
         * Clone the repository: `git clone -b branch https://github.com/Lumerin-protocol/Morpheus-Lumerin-Node.git` 
         * Mainnet Branch = `main` 
-        * Testnet Branch = `stg`
+        * Testnet Branch = `test`
         * Development Branch = `dev`(not recommended unless directed by the development team)
 
 1. Extract the zip to a local folder (examples)
@@ -27,18 +27,22 @@
     * On MacOS you may need to execute `xattr -c proxy-router` in a command window to remove the quarantine flag on MacOS
 
 1. Environment configuration 
-    * In most cases, to start with, the default .env file will work for the proxy-router...in some cases you will want to modify the .env file with advanced capability (log entries, private keys, private endpoints, etc)
-    * Choose which chain and environment you want to work with (MAIN or TEST) and select the right example .env file 
-        * Mainnet: `env.main.example` for Max/Unix or `env.main.example.win` for Windows
-        * Testnet: `env.test.example` for Max/Unix or `env.test.example.win` for Windows
-    * Change the name of the desired file to `.env` 
-    * Please see [proxy-router.all.env](proxy-router.all.env) for more information on the key values needed in the .env file
+    * In most cases, the default .env file will work for the proxy-router...In some cases you will want to modify the .env file with advanced capability (log entries, private keys, private endpoints, etc)
+    * Please see [proxy-router.all.env](proxy-router.all.env) for more information on the key values available in the .env file
+    1. Choose OS environment you are working with: 
+        * Linux/Mac: `env.example`  or `env.example.win` for Windows
+        * Change the name of the desired file to `.env` 
+        * Edit values within the file (Wallet_Private_Key, for example) as desired
+    2. Choose the **blockchain** you'd like to work on...**Arbitrum MAINNET is the default** 
+        * To operate on the Sepolia Arbitrum TESTNET,  
+        * Edit the .env file and 
+        * Uncomment the `TESTNET VALUES` and comment the `MAINNET VALUES` lines & save the file
 
 1. **(OPTIONAL)** - External Provider or Pass through 
     * In some cases you will want to leverage external or existing AI Providers in the network via their own, private API
     * Dependencies: 
         * `model-config.json` file in the proxy-router directory
-        * proxy-router .env file for proxy-router must also be updated to include `MODELS_CONFIG_PATH=<path_to_proxy-router>/models-config.json`
+        * proxy-router .env file for proxy-router must also be edited to adjust `MODELS_CONFIG_PATH=<path_to_proxy-router>/models-config.json`
     * Once your provider is up and running, deploy a new model and model bid via the API interface (you will need the `model_ID` for the configuration)
     * Edit the model-config.json to the following json format
         * The JSON ID will be the ModelID that you created above, modelName, apiTYpe, apiURL and apiKey are from the external provider and specific to their offered models 

@@ -11,7 +11,7 @@ runs:
         echo $SHORT_HASH
         if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
           PREFIX="main-"
-        elif [[ "${GITHUB_REF}" == "refs/heads/stg" ]]; then
+        elif [[ "${GITHUB_REF}" == "refs/heads/test" ]]; then
           PREFIX="test-"
         else
           PREFIX="dev-"

@@ -4,6 +4,8 @@ definitions:
     properties:
       apiType:
         type: string
+      apiUrl:
+        type: string
       capacityPolicy:
         type: string
       id:

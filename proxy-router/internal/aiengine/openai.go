@@ -62,8 +62,7 @@ func (a *OpenAI) Prompt(ctx context.Context, compl *openai.ChatCompletionRequest
 	}
 	defer resp.Body.Close()
 
-	contentType := resp.Header.Get(c.HEADER_CONTENT_TYPE)
-	if contentType == c.CONTENT_TYPE_EVENT_STREAM {
+	if isContentTypeStream(resp.Header) {
 		return a.readStream(ctx, resp.Body, cb)
 	}
 
@@ -128,6 +127,13 @@ func (a *OpenAI) ApiType() string {
 
 func isStreamFinished(data string) bool {
 	return strings.Index(data, StreamDone) != -1
+}
+
+func isContentTypeStream(header http.Header) bool {
+	contentType := header.Get(c.HEADER_CONTENT_TYPE)
+	cTypeParams := strings.Split(contentType, ";")
+	cType := strings.TrimSpace(cTypeParams[0])
+	return cType == c.CONTENT_TYPE_EVENT_STREAM
 }
 
 const (

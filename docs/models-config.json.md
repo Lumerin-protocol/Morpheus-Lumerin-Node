@@ -1,5 +1,5 @@
 # Example models config file.  Local model configurations are stored in this file
-* `rooot_key` (required) is the model id
+* `root_key` (required) is the model id
 * `modelName` (required) is the name of the model
 * `apiType` (required) is the type of the model api.  Currently supported values are "prodia" and "openai"
 * `apiUrl` (required) is the url of the LLM server or model API
@@ -8,13 +8,13 @@
 * `capacityPolicy` (optional) can be one of the following: "idle_timeout", "simple" 
 
 ## Examples of models-config.json entries 
-* The first key (`0x6a...9018`) is the model id of the local default model (llama2)
+* The first key (`0x000...0000`) is the model id of the local default model (llama2)
 * The middle two keys are examples of externally hosted and owned models where the morpheus-proxy-router enables proxying requests to the external model API
 * The last key is an example of a model hosted on a server owned by the morpheus-proxy-router operator
 
 ```bash
 {
-    "0x6a4813e866a48da528c533e706344ea853a1d3f21e37b4c8e7ffd5ff25779018": {
+    "0x0000000000000000000000000000000000000000000000000000000000000000": {
         "modelName": "llama2",
         "apiType": "openai",
         "apiUrl": "http://localhost:8080/v1"

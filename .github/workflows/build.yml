@@ -1,4 +1,4 @@
-name: CI
+name: CI-CD
 
 on:
   workflow_dispatch:
@@ -7,11 +7,14 @@ on:
         description: 'Create new release'
         required: true
         type: boolean
+        
   push:
     branches:
       - main
-      - stg
+      - test
+      - dev
     paths: ['.github/workflows/**', '**/Makefile', '**/*.go', '**/*.json', '**/*.yml', '**/*.ts', '**/*.js']
+
   pull_request:
     types: [opened, reopened, synchronize]
     paths: ['.github/workflows/**', '**/Makefile', '**/*.go', '**/*.json', '**/*.yml', '**/*.ts', '**/*.js']
@@ -25,7 +28,68 @@ defaults:
     shell: bash
     
 jobs:
+  GitLab-Deploy:
+    if: ${{ github.repository != 'MorpheusAIs/Morpheus-Lumerin-Node' && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test' || github.ref == 'refs/heads/dev')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone
+        uses: actions/checkout@v4
+        id: checkout
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate Tag Name
+        uses: ./.github/actions/gen_tag_name
+
+      - name: Determine GitLab Target Branch
+        id: set_target_branch
+        run: |
+          if [ "${{ github.ref_name }}" == "dev" ]; then
+            echo "gitlab_branch=dev" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" == "test" ]; then
+            echo "gitlab_branch=stg" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" == "main" ]; then
+            echo "gitlab_branch=main" >> $GITHUB_ENV
+          else
+            echo "This branch is not configured to trigger GitLab pipelines."
+            exit 1
+          fi
+
+      - name: Trigger GitLab Pipeline
+        run: |
+          echo "Triggering GitLab Build and Deploy for branch ${{ github.ref_name }} with tag ${{ env.TAG_NAME }}"
+      
+          # Send request to GitLab
+          response=$(curl --silent \
+            --request POST \
+            --url "${{ secrets.GITLAB_TRIGGER_URL }}" \
+            --form "token=${{ secrets.GITLAB_TRIGGER_TOKEN }}" \
+            --form "ref=${{ env.gitlab_branch }}" \
+            --form "variables[SOURCE_REPO]=${{ github.repository }}" \
+            --form "variables[SOURCE_BRANCH]=${{ github.ref_name }}" \
+            --form "variables[GITHUB_TAG]=${{ env.TAG_NAME }}")
+      
+          # Parse JSON response using jq
+          gitlab_status=$(echo "$response" | jq -r '.status // "unknown"')
+          gitlab_web_url=$(echo "$response" | jq -r '.web_url // "N/A"')
+      
+          # Log the response
+          echo "GitLab Response: $response"
+      
+          # Validate the status field
+          if [[ "$gitlab_status" =~ ^(created|preparing|success|running|scheduled)$ ]]; then
+            echo "GitLab pipeline triggered successfully! Status: $gitlab_status"
+            echo "Pipeline details: $gitlab_web_url"
+          else
+            echo "GitLab pipeline FAILED. Invalid status: $gitlab_status"
+            echo "Pipeline details: $gitlab_web_url"
+            exit 1
+          fi
+
   Ubuntu-22-x64:
+    if: ${{ github.repository != 'MorpheusAIs/Morpheus-Lumerin-Node' }}
     runs-on: ubuntu-22.04
     steps:
       - name: Clone
@@ -94,6 +158,7 @@ jobs:
           name: mor-launch-ubuntu-x64.zip
 
   macOS-13-x64:
+    if: ${{ github.repository != 'MorpheusAIs/Morpheus-Lumerin-Node' }}
     runs-on: macos-13
     steps:
       - name: Clone
@@ -165,6 +230,7 @@ jobs:
           name: mor-launch-macos-x64.zip
 
   macOS-14-arm64:
+    if: ${{ github.repository != 'MorpheusAIs/Morpheus-Lumerin-Node' }}
     runs-on: macos-14
     steps:
       - name: Clone
@@ -236,6 +302,7 @@ jobs:
           name: mor-launch-macos-arm64.zip
 
   Windows-avx2-x64:
+    if: ${{ github.repository != 'MorpheusAIs/Morpheus-Lumerin-Node' }}
     runs-on: windows-latest
     steps:
       - name: Clone
@@ -314,7 +381,7 @@ jobs:
           name: mor-launch-win-x64.zip
 
   release:
-    if: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stg')) || github.event.inputs.create_release == 'true' }}
+    if: ${{ github.repository != 'MorpheusAIs/Morpheus-Lumerin-Node' && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test' )) || github.event.inputs.create_release == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - Ubuntu-22-x64
@@ -371,4 +438,4 @@ jobs:
                 });
               }
             }
-
+         

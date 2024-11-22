@@ -1452,6 +1452,9 @@ const docTemplate = `{
                 "apiType": {
                     "type": "string"
                 },
+                "apiUrl": {
+                    "type": "string"
+                },
                 "capacityPolicy": {
                     "type": "string"
                 },
