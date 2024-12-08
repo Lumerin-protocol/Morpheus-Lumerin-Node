@@ -145,6 +145,7 @@ const createClient = function (createStore) {
     // Failover
     getFailoverSetting: utils.forwardToMainProcess('get-failover-setting', 750000),
     setFailoverSetting: utils.forwardToMainProcess('set-failover-setting', 750000),
+    checkProviderConnectivity: utils.forwardToMainProcess('check-provider-connectivity', 750000)
   }
 
   const api = {

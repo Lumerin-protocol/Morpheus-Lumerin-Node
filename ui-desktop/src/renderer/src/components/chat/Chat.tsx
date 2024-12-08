@@ -45,12 +45,14 @@ const userMessage = { user: 'Me', role: "user", icon: "M", color: "#20dc8e" };
 
 const Chat = (props) => {
     const chatBlockRef = useRef<null | HTMLDivElement>(null);
+    const bidsSpinWaitClosed = useRef(false);
 
     const [value, setValue] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [messages, setMessages] = useState<any>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [sessions, setSessions] = useState<any>();
+    const [providersAvailability, setProvidersAvailability] = useState<any[]>([]);
 
     const [isSpinning, setIsSpinning] = useState(false);
     const [meta, setMeta] = useState({ budget: 0, supply: 0 });
@@ -81,14 +83,14 @@ const Chat = (props) => {
 
     useEffect(() => {
         (async () => {
-            const [meta, chainData, chats, userBalances] = await Promise.all([
-                props.getMetaInfo(),
+            console.time("LOAD")
+            const [chainData, userSessions, chats] = await Promise.all([
                 props.getModelsData(),
-                props.client.getChatHistoryTitles() as Promise<ChatTitle[]>,
-                props.getBalances()]);
+                props.getSessionsByUser(props.address),
+                props.client.getChatHistoryTitles() as Promise<ChatTitle[]>]);
 
-            setBalances(userBalances)
-            setMeta(meta);
+            setBalances(chainData.userBalances)
+            setMeta(chainData.meta);
             setChainData(chainData)
 
             const mappedChatData = chats.reduce((res, item) => {
@@ -106,7 +108,15 @@ const Chat = (props) => {
             }, [] as ChatData[])
             setChatsData(mappedChatData);
 
-            const sessions = await refreshSessions(chainData?.models);
+            const sessions = userSessions.reduce((res, item) => {
+                const sessionModel = chainData.models.find(x => x.Id == item.ModelAgentId);
+                if (sessionModel) {
+                    item.ModelName = sessionModel.Name;
+                    res.push(item);
+                }
+                return res;
+            }, []);
+            setSessions(sessions);
 
             const openSessions = sessions.filter(s => !isClosed(s));
 
@@ -120,6 +130,7 @@ const Chat = (props) => {
 
             if (!openSessions.length) {
                 useLocalModelChat();
+                console.timeEnd("LOAD")
                 return;
             }
 
@@ -128,10 +139,11 @@ const Chat = (props) => {
 
             if (!latestSessionModel) {
                 useLocalModelChat();
+                console.timeEnd("LOAD")
                 return;
             }
 
-            const openBid = latestSessionModel?.bids?.find(b => b.Id == latestSession.BidID);
+            const openBid = await props.getBidInfo(latestSession.BidID)
 
             if (!openBid) {
                 useLocalModelChat();
@@ -141,12 +153,66 @@ const Chat = (props) => {
             setSelectedBid(openBid);
             setActiveSession(latestSession);
             setChat({ id: generateHashId(), createdAt: new Date(), modelId: latestSessionModel.ModelAgentId });
-        })().then(() => {
+            console.timeEnd("LOAD")
+        })()
+        .then(() => {
             setIsLoading(false);
         })
     }, [])
 
+    useEffect(() => {
+        if(!chainData)
+            return;
+
+        (async () => {
+            const providersMap = chainData.providers.reduce((a, b) => ({ ...a, [b.Address.toLowerCase()]: b }), {});
+            const modelsWithBids= (await Promise.all(
+                chainData.models.map(async m => {
+                    const id = m.Id;
+                    if(m.isLocal){
+                        return { id }
+                    }
+                    const bids = (await props.getBidsByModelId(id))
+                        .map(b => ({ ...b, ProviderData: providersMap[b.Provider.toLowerCase()], Model: m }))
+                        .filter(b => b.ProviderData);
+
+                    if(!bids.length){
+                        return null;
+                    }
+
+                    return { id, bids }
+                })
+            )).reduce((acc, next) => {
+                if(!next) {
+                    return acc;
+                }
+                const model = chainData.models.find(m => m.Id == next.id);
+                return [...acc, { ...model, bids: next.bids}]
+            }, []);
+            
+            setChainData({...chainData, models: modelsWithBids})
+            bidsSpinWaitClosed.current = true;
+        })();
+
+        (async () => {
+            const availabilityResults = await props.getProvidersAvailability(chainData.providers);
+            setProvidersAvailability(availabilityResults);            
+        })();
+
+    }, chainData)
+
+    const spinWaitForBids = async () => {
+        if(bidsSpinWaitClosed.current)
+            return;
+        setIsLoading(true);
+        while(!bidsSpinWaitClosed.current) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        setIsLoading(true);
+    }
+
     const toggleDrawer = async () => {
+        spinWaitForBids();
         setIsOpen((prevState) => !prevState)
     }
 
@@ -228,9 +294,9 @@ const Chat = (props) => {
         }
     }
 
-    const refreshSessions = async (models = null) => {
+    const refreshSessions = async () => {
         const sessions = (await props.getSessionsByUser(props.address)).reduce((res, item) => {
-            const sessionModel = (models || chainData.models).find(x => x.Id == item.ModelAgentId);
+            const sessionModel = chainData.models.find(x => x.Id == item.ModelAgentId);
             if (sessionModel) {
                 item.ModelName = sessionModel.Name;
                 res.push(item);
@@ -272,8 +338,6 @@ const Chat = (props) => {
         setSelectedModel(selectedModel);
         setIsReadonly(false);
 
-        // toggleDrawer();
-
         setChat({ ...chatData })
 
         if (chatData.isLocal) {
@@ -301,6 +365,7 @@ const Chat = (props) => {
     }
 
     const handleReopen = async () => {
+        spinWaitForBids();
         setIsLoading(true);
         const newSessionId = await onOpenSession(true);
         setIsReadonly(false);
@@ -521,7 +586,10 @@ const Chat = (props) => {
         setIsReadonly(false);
         setChat({ id: generateHashId(), createdAt: new Date(), modelId, isLocal });
 
-        const selectedModel = isLocal ? chainData.models.find((m: any) => m.Id == modelId) : chainData.models.find((m: any) => m.Id == modelId && m.bids);
+        const selectedModel = isLocal 
+            ? chainData.models.find((m: any) => m.Id == modelId) 
+            : chainData.models.find((m: any) => m.Id == modelId && m.bids);
+
         setSelectedModel(selectedModel);
 
         if (isLocal) {
@@ -535,9 +603,7 @@ const Chat = (props) => {
 
         if (openModelSession) {
             const selectedBid = selectedModel.bids.find(b => b.Id == openModelSession.BidID && b.bids);
-            if (selectedBid) {
-                setSelectedBid(selectedBid);
-            }
+            setSelectedBid(selectedBid);
             setActiveSession(openModelSession)
             return;
         }
@@ -616,7 +682,10 @@ const Chat = (props) => {
                             </div>
                             <BtnAccent
                                 className='change-modal'
-                                onClick={() => setOpenChangeModal(true)}>
+                                onClick={async () => {
+                                    await spinWaitForBids();
+                                    setOpenChangeModal(true);
+                                } }>
                                 <IconMessagePlus></IconMessagePlus> New chat
                             </BtnAccent>
                         </div>
@@ -717,6 +786,7 @@ const Chat = (props) => {
                 models={(chainData as any)?.models}
                 isActive={openChangeModal}
                 symbol={props.symbol}
+                providersAvailability={providersAvailability}
                 onChangeModel={(eventData) => {
                     onCreateNewChat(eventData);
                 }}

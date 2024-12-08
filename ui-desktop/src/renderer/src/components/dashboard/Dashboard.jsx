@@ -56,6 +56,7 @@ const Dashboard = ({
   ethCoinPrice,
   loadTransactions,
   getStakedFunds,
+  explorerUrl,
   ...props
 }) => {
   const [activeModal, setActiveModal] = useState(null)
@@ -174,7 +175,7 @@ const Dashboard = ({
           </StakingWidjet>
         <WidjetItem>
         <CustomBtn
-             onClick={() => window.openLink(`https://sepolia.arbiscan.io/address/${address}`)}
+             onClick={() => window.openLink(explorerUrl)}
               block
             >
               Transaction Explorer

@@ -36,7 +36,8 @@ const listeners = {
   "update-chat-history-title": handlers.updateChatHistoryTitle,
   // Failover
   "get-failover-setting": handlers.isFailoverEnabled,
-  "set-failover-setting": handlers.setFailoverSetting
+  "set-failover-setting": handlers.setFailoverSetting,
+  "check-provider-connectivity": handlers.checkProviderConnectivity
 }
 
 // Subscribe to messages where no core has to react

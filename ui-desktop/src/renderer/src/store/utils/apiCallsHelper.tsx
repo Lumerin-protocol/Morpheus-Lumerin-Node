@@ -75,3 +75,16 @@ export const getBidsByModelId = async (url, modelId) => {
 
   return bids;
 }
+
+export const getBidInfoById = async (url, id) => {
+  try {
+    const path = `${url}/blockchain/bids/${id}`
+    const response = await fetch(path);
+    const data = await response.json();
+    return data.bid;
+  }
+  catch (e) {
+    console.log("Error", e)
+    return undefined;
+  }
+}

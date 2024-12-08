@@ -216,6 +216,35 @@ const updateChatHistoryTitle = async ({ id, title}) => {
     }
  }
 
+  /**
+ * @param {string} address
+ * @param {string} endpoint
+ * @returns {Promise<boolean>}
+*/
+const checkProviderConnectivity = async ({ address, endpoint}) => {
+    try {
+        const path = `${config.chain.localProxyRouterUrl}/proxy/provider/ping`;
+        const response = await fetch(path, {
+            method: "POST",
+            body: JSON.stringify({ 
+                providerAddr: address,
+                providerUrl: endpoint
+             }),
+        });
+
+        if(!response.ok) {
+            return false;
+        }
+
+        const body = await response.json();
+        return !!body.ping;
+    }
+    catch (e) {
+        console.log("checkProviderConnectivity: Error", e)
+        return false;
+    }
+ }
+
 export default {
     getAllModels,
     getBalances,
@@ -229,4 +258,5 @@ export default {
     getChatHistory,
     updateChatHistoryTitle,
     deleteChatHistory,
+    checkProviderConnectivity
 }

@@ -125,6 +125,9 @@ const withDashboardState = WrappedComponent => {
     page: selectors.getTransactionPage(state),
     pageSize: selectors.getTransactionPageSize(state),
     hasNextPage: selectors.getHasNextPage(state),
+    explorerUrl: selectors.getContractExplorerUrl(state, { 
+      hash: selectors.getWalletAddress(state)
+    })
   });
 
   const mapDispatchToProps = dispatch => ({

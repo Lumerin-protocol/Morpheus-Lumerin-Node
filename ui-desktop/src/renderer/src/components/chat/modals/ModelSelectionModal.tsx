@@ -36,7 +36,7 @@ const RVContainer = styled(RVList)`
    overflow: visible !important;
   }`
 
-const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel, symbol }) => {
+const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel, symbol, providersAvailability }) => {
     const [search, setSearch] = useState<string | undefined>();
 
     if (!isActive) {
@@ -49,7 +49,30 @@ const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel, sym
     }
 
     const sortedModels = models
-        .map(m => ({ ...m, isOnline: m.isLocal || m.bids.some(b => b.ProviderData?.availabilityStatus != "disconnected") }))
+        .map(m => {
+            if(m.isLocal || !providersAvailability){
+                return ({...m, isOnline: true })
+            }
+
+            const info = m.bids.reduce((acc, next) => {
+                const entry = providersAvailability.find(pa => pa.id == next.Provider);
+                if(!entry) {
+                    return acc;
+                }
+
+                if(entry.isOnline) {
+                    return acc;
+                }
+
+                const isOnline = entry.status != "disconnected";
+
+                return {
+                    isOnline,
+                    lastCheck: !isOnline ? entry.time : undefined
+                }
+            }, {});
+            return ({ ...m, ...info })
+        } )
         .sort((a, b) => b.isOnline - a.isOnline);
 
     const filterdModels = search ? sortedModels.filter(m => m.Name.toLowerCase().includes(search.toLowerCase())) : sortedModels;

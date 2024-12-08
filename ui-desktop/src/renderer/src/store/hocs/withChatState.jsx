@@ -4,7 +4,7 @@ import React from 'react';
 import { ToastsContext } from '../../components/toasts';
 import selectors from '../selectors';
 import axios from 'axios';
-import { getSessionsByUser, getBidsByModelId } from '../utils/apiCallsHelper';
+import { getSessionsByUser, getBidsByModelId, getBidInfoById } from '../utils/apiCallsHelper';
 
 const AvailabilityStatus = {
   available: "available",
@@ -93,56 +93,27 @@ const withChatState = WrappedComponent => {
     }
 
     getModelsData = async () => {
-      const [localModels, modelsResp, providersResp] = await Promise.all([
+      const [localModels, modelsResp, providersResp, meta, userBalances] = await Promise.all([
         this.getLocalModels(),
         this.getAllModels(),
-        this.getProviders()]);
+        this.getProviders(),
+        this.getMetaInfo(),
+        this.getBalances()]);
 
       const models = modelsResp.filter(m => !m.IsDeleted);
       const providers = providersResp.filter(m => !m.IsDeleted);
 
-      const availabilityResults = await this.getProvidersAvailability(providers);
-      availabilityResults.forEach(ar => {
-        const provider = providers.find(p => p.Address == ar.id);
-        if(!provider)
-          return;
+      const result = [...localModels.map(m => ({...m, isLocal: true })), ...models];
 
-        provider.availabilityStatus = ar.status;
-        provider.availabilityUpdatedAt = ar.time;
-      });
-
-      const providersMap = providers.reduce((a, b) => ({ ...a, [b.Address.toLowerCase()]: b }), {});
-
-      const responses = (await Promise.all(
-        models.map(async m => {
-          const id = m.Id;
-          const bids = (await getBidsByModelId(this.props.config.chain.localProxyRouterUrl, id))
-            .filter(b => +b.DeletedAt === 0)
-            .map(b => ({ ...b, ProviderData: providersMap[b.Provider.toLowerCase()], Model: m }))
-            .filter(b => b.ProviderData)
-            .filter(b => b.Provider != this.props.address);
-
-          return { id, bids }
-        })
-      )).reduce((a,b) => ({...a, [b.id]: b.bids}), {});
-
-      const result = [...localModels.map(m => ({...m, isLocal: true }))];
-
-      for (const model of models) {
-        const id = model.Id;
-        const bids = responses[id];
-        
-        if(!bids.length) {
-          continue;
-        }
-
-        result.push({ ...model, bids })
-      }
-
-      return { models: result, providers }
+      return { models: result, providers, meta, userBalances }
     }
 
     getProvidersAvailability = async (providers) => {
+      const isValidUrl = (url) => {
+        const urlRegex = /^(https?:\/\/)?(([a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|localhost)|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d{1,5})?(\/\S*)?$/;
+        return urlRegex.test(url);
+      }
+
       const availabilityResults = await Promise.all(providers.map(async p => {
         try {
           const storedRecord = JSON.parse(localStorage.getItem(p.Address));
@@ -156,14 +127,12 @@ const withChatState = WrappedComponent => {
             }
           }
 
-          const endpoint = p.Endpoint;
-          const [domain, port] = endpoint.split(":");
-          const { data } = await axios.post("https://portchecker.io/api/v1/query", {
-            host: domain,
-            ports: [port],
-          });
-    
-          const isValid = !!data.check?.find((c) => c.port == port && c.status == true);
+          if(!isValidUrl(p.Endpoint)) {
+            return ({ id: p.Address, status: AvailabilityStatus.disconnected, time: new Date() });
+          }
+
+          const isValid = await this.props.client.checkProviderConnectivity({ endpoint: p.Endpoint, address: p.Address })
+
           const record = ({id: p.Address, status: isValid ? AvailabilityStatus.available : AvailabilityStatus.disconnected, time: new Date() });
           localStorage.setItem(record.id, JSON.stringify({ status: record.status, time: record.time }));
           return record;
@@ -188,6 +157,23 @@ const withChatState = WrappedComponent => {
       }
 
       return await getSessionsByUser(this.props.config.chain.localProxyRouterUrl, user);
+    }
+
+    getBidInfo = async (id) => {
+      if(!id){
+        return;
+      }
+
+      return await getBidInfoById(this.props.config.chain.localProxyRouterUrl, id)
+    }
+
+    getBidsByModelId = async(modelId) => {
+      if(!modelId) {
+        return;
+      }
+
+      const bids = await getBidsByModelId(this.props.config.chain.localProxyRouterUrl, modelId);
+      return bids.filter(b => +b.DeletedAt === 0).filter(b => b.Provider != this.props.address);
     }
 
     onOpenSession = async ({ modelId, duration }) => {
@@ -229,8 +215,10 @@ const withChatState = WrappedComponent => {
       return (
         <WrappedComponent
           getProviders={this.getProviders}
-          getBidsByModels={this.getBidsByModels}
+          getProvidersAvailability={this.getProvidersAvailability}
+          getBidInfo={this.getBidInfo}
           getMetaInfo={this.getMetaInfo}
+          getBidsByModelId={this.getBidsByModelId}
           getModelsData={this.getModelsData}
           getSessionsByUser={this.getSessionsByUser}
           closeSession={this.closeSession}

@@ -99,12 +99,7 @@ function ModelRow(props) {
     const bids = props?.model?.bids || [];
     const modelId = props?.model?.Id || '';
     const isLocal = props?.model?.isLocal;
-    const lastAvailabilityCheck: Date = (() => {
-        if(!bids?.length) {
-            return new Date();
-        }
-        return bids.map(b => new Date(b.ProviderData?.availabilityUpdatedAt ?? new Date()))[0];
-    })();
+    const lastAvailabilityCheck: Date = new Date(props?.model?.lastCheck ?? new Date());
 
     const [selected, changeSelected] = useState<any>();
     const [useSelect, setUseSelect] = useState<boolean>();
