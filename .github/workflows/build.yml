@@ -156,12 +156,12 @@ jobs:
           echo "VFULL: $VFULL"
           ARTIFACT="mor-launch-$TAG_NAME-ubuntu-x64.zip"
           echo "Artifact: $ARTIFACT"
-          LLAMACPP=llama-b3256-bin-ubuntu-x64.zip
+          LLAMACPP=llama-b4354-bin-ubuntu-x64.zip
           MODEL=tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
-          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b3256/$LLAMACPP
+          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b4354/$LLAMACPP
           wget -nv https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/$MODEL
           unzip -o -j $LLAMACPP build/bin/llama-server
-          echo '{"run":["./llama-server -m ./'"$MODEL"'","./proxy-router","./morpheus-ui-'"$VFULL"'-x86_64-linux.AppImage"]}' > mor-launch.json
+          echo '{"run":["./llama-server --no-webui -m ./'"$MODEL"'","./proxy-router","./morpheus-ui-'"$VFULL"'-x86_64-linux.AppImage"]}' > mor-launch.json
           echo "Contents of mor-launch.json: "
           cat mor-launch.json
           mv ./cli/mor-cli mor-cli
@@ -235,12 +235,12 @@ jobs:
         run: |
           ARTIFACT="mor-launch-$TAG_NAME-macos-x64.zip"
           echo "Artifact: $ARTIFACT"
-          LLAMACPP=llama-b3256-bin-macos-x64.zip
+          LLAMACPP=llama-b4354-bin-macos-x64.zip
           MODEL=tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
-          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b3256/$LLAMACPP
+          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b4354/$LLAMACPP
           wget -nv https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/$MODEL
           unzip -o -j $LLAMACPP build/bin/llama-server
-          echo '{"run":["./llama-server -m ./'$MODEL'","./proxy-router","./MorpheusUI.app/Contents/MacOS/MorpheusUI"]}' > mor-launch.json
+          echo '{"run":["./llama-server --no-webui -m ./'$MODEL'","./proxy-router","./MorpheusUI.app/Contents/MacOS/MorpheusUI"]}' > mor-launch.json
           echo "Contents of mor-launch.json: "
           cat mor-launch.json
           mv ./cli/mor-cli mor-cli
@@ -316,12 +316,12 @@ jobs:
         run: |
           ARTIFACT="mor-launch-$TAG_NAME-macos-arm64.zip"
           echo "Artifact: $ARTIFACT"
-          LLAMACPP=llama-b3256-bin-macos-arm64.zip
+          LLAMACPP=llama-b4354-bin-macos-arm64.zip
           MODEL=tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
-          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b3256/$LLAMACPP
+          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b4354/$LLAMACPP
           wget -nv https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/$MODEL
           unzip -o -j $LLAMACPP build/bin/llama-server
-          echo '{"run":["./llama-server -m ./'$MODEL'","./proxy-router","./MorpheusUI.app/Contents/MacOS/MorpheusUI"]}' > mor-launch.json
+          echo '{"run":["./llama-server --no-webui -m ./'$MODEL'","./proxy-router","./MorpheusUI.app/Contents/MacOS/MorpheusUI"]}' > mor-launch.json
           echo "Contents of mor-launch.json: "
           cat mor-launch.json
           mv ./cli/mor-cli mor-cli
@@ -403,12 +403,12 @@ jobs:
           echo "VFULL: $VFULL"
           ARTIFACT="mor-launch-$TAG_NAME-win-x64.zip"
           echo "Artifact: $ARTIFACT"
-          LLAMACPP=llama-b3256-bin-win-avx2-x64.zip
+          LLAMACPP=llama-b4354-bin-win-avx2-x64.zip
           MODEL=tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
-          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b3256/$LLAMACPP
+          wget -nv https://github.com/ggerganov/llama.cpp/releases/download/b4354/$LLAMACPP
           wget -nv https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/$MODEL
           unzip -o -j $LLAMACPP llama-server.exe llama.dll ggml.dll
-          echo '{"run":["./llama-server.exe -m ./'"$MODEL"'","./proxy-router.exe","./morpheus-ui-'"$VFULL"'-x64-win.exe"]}' > mor-launch.json
+          echo '{"run":["./llama-server.exe --no-webui -m ./'"$MODEL"'","./proxy-router.exe","./morpheus-ui-'"$VFULL"'-x64-win.exe"]}' > mor-launch.json
           echo "Contents of mor-launch.json: "
           cat mor-launch.json
           mv .env .env.tmp
