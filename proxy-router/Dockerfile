@@ -22,6 +22,7 @@ WORKDIR /app
 # Copy required files and binary
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/bin/proxy-router /usr/bin/
+COPY models-config.json /app/data/models-config.json
 
 # Optional Copy utilities from busybox image
 COPY --from=busybox /bin /bin
