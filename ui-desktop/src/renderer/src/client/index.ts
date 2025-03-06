@@ -148,6 +148,17 @@ const createClient = function (createStore) {
     getFailoverSetting: utils.forwardToMainProcess('get-failover-setting', 750000),
     setFailoverSetting: utils.forwardToMainProcess('set-failover-setting', 750000),
     checkProviderConnectivity: utils.forwardToMainProcess('check-provider-connectivity', 750000),
+
+    // IPFS
+    getIpfsVersion: utils.forwardToMainProcess('get-ipfs-version', 750000),
+    getIpfsFile: utils.forwardToMainProcess('get-ipfs-file', 750000),
+    pinIpfsFile: utils.forwardToMainProcess('pin-ipfs-file', 750000),
+    unpinIpfsFile: utils.forwardToMainProcess('unpin-ipfs-file', 750000),
+    addFileToIpfs: utils.forwardToMainProcess('add-file-to-ipfs', 750000),
+    getIpfsPinnedFiles: utils.forwardToMainProcess('get-ipfs-pinned-files', 750000),
+
+    openSelectFolderDialog: utils.forwardToMainProcess('open-select-folder-dialog', 750000),
+
     // Agents
     getAgentUsers: utils.forwardToMainProcess('get-agent-users', 750000),
     confirmDeclineAgentUser: utils.forwardToMainProcess('confirm-decline-agent-user', 750000),

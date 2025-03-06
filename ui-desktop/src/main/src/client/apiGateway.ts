@@ -5,7 +5,8 @@ import {
   AgentTxRes,
   AgentUserRes,
   ChatHistory,
-  ChatTitle
+  ChatTitle,
+  ResultResponse
 } from './api.types'
 
 import os from 'os'
@@ -397,6 +398,85 @@ const confirmDeclineAgentAllowanceRequest = async (params: {
   }
 }
 
+
+const getIpfsVersion = async (): Promise<{ version: string } | null> => {
+  try {
+    const path = `${config.chain.localProxyRouterUrl}/ipfs/version`;
+    const response = await fetch(path, { headers: await getAuthHeaders() });
+    const body = await response.json();
+    return body;
+  }
+  catch (e) {
+    console.log("Error", e)
+    return null;
+  }
+}
+
+const getIpfsFile = async ({ cid, destinationPath }: { cid: string, destinationPath: string }): Promise<ResultResponse | null> => {
+  try {
+    const path = `${config.chain.localProxyRouterUrl}/ipfs/download/${cid}`;
+    const response = await fetch(path, { headers: await getAuthHeaders(), method: "POST", body: JSON.stringify({ destinationPath }) });
+    const body = await response.json();
+    return body;
+  }
+  catch (e) {
+    console.log("Error", e)
+    return null;
+  }
+}
+
+const pinIpfsFile = async ({ cid }: { cid: string }): Promise<ResultResponse | null> => {
+  try {
+    const path = `${config.chain.localProxyRouterUrl}/ipfs/pin`;
+    const response = await fetch(path, { method: "POST", headers: await getAuthHeaders(), body: JSON.stringify({ cid }) });
+    const body = await response.json();
+    return body;
+  }
+  catch (e) {
+    console.log("Error", e)
+    return null;
+  }
+}
+
+const unpinIpfsFile = async ({ cid }: { cid: string }): Promise<ResultResponse | null> => {
+  try {
+    const path = `${config.chain.localProxyRouterUrl}/ipfs/unpin    `;
+    const response = await fetch(path, { method: "POST", headers: await getAuthHeaders(), body: JSON.stringify({ cid }) });
+    const body = await response.json();
+    return body;
+  }
+  catch (e) {
+    console.log("Error", e)
+    return null;
+  }
+}
+
+const addFileToIpfs = async ({ filePath }: { filePath: string }): Promise<{ hash: string, cid: string } | null> => {
+  try {
+    const path = `${config.chain.localProxyRouterUrl}/ipfs/add`;
+    const response = await fetch(path, { method: "POST", headers: await getAuthHeaders(), body: JSON.stringify({ filePath }) });
+    const body = await response.json();
+    return body;
+  }
+  catch (e) {
+    console.log("Error", e)
+    return null;
+  }
+}
+
+const getIpfsPinnedFiles = async (): Promise<{ files: { cid: string, hash: string }[] } | null> => {
+  try {
+    const path = `${config.chain.localProxyRouterUrl}/ipfs/pin`;
+    const response = await fetch(path, { headers: await getAuthHeaders() });
+    const body = await response.json();
+    return body;
+  }
+  catch (e) {
+    console.log("Error", e)
+    return null;
+  }
+}
+
 const apiGateway = {
   getAllModels,
   getBalances,
@@ -420,7 +500,13 @@ const apiGateway = {
   getAgentTxs,
   revokeAgentAllowance,
   getAgentAllowanceRequests,
-  confirmDeclineAgentAllowanceRequest
+  confirmDeclineAgentAllowanceRequest,
+  getIpfsVersion,
+  getIpfsFile,
+  pinIpfsFile,
+  unpinIpfsFile,
+  addFileToIpfs,
+  getIpfsPinnedFiles,
 }
 
 export default apiGateway

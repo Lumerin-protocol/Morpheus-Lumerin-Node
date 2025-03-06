@@ -53,3 +53,7 @@ export type ChatMessage = {
   isImageContent: boolean
   isVideoRawContent: boolean
 }
+
+export type ResultResponse = {
+  result: boolean
+}

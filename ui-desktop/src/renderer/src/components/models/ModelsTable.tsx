@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import withModelsState from '../../store/hocs/withModelsState';
 import styled from 'styled-components';
@@ -6,6 +6,8 @@ import styled from 'styled-components';
 import Card from 'react-bootstrap/Card';
 import { abbreviateAddress } from '../../utils';
 import { IconDownload } from '@tabler/icons-react';
+import Form from 'react-bootstrap/esm/Form';
+
 
 const CustomCard = styled(Card)`
   background: #244a47 !important;
@@ -27,9 +29,37 @@ const Container = styled.div`
   flex-direction: row;
   flex-wrap: wrap;
   gap: 24px;
+  max-height: 75vh;
+  overflow-y: auto;
 `;
 
-function ModelCard({ onSelect, model }) {
+function ModelCard({ onSelect, model, openSelectDownloadFolder, downloadModelFromIpfs, toasts }) {
+  const handleFolderSelect = async (e) => {
+    e.stopPropagation();
+    try {
+      const result = await openSelectDownloadFolder();
+      const { canceled, filePaths } = result;
+      if (canceled) {
+        return;
+      }
+      const folderPath = filePaths[0];
+      const response = await downloadModelFromIpfs(model.IpfsCID, folderPath);
+      if (response) {
+        toasts.toast("success", "Model downloaded successfully");
+      } else {
+        toasts.toast("error", "Failed to download model");
+      }
+    } catch (error) {
+      if (error?.includes("invalid CID")) {
+        toasts.toast("error", "Invalid CID specified in the model.");
+      } else if (error?.includes("failed to find file")) {
+        toasts.toast("error", "Model is not found in IPFS.");
+      } else {
+        toasts.toast("error", "Failed to download model");
+      }
+    }
+  };
+
   return (
     <CustomCard style={{ width: '36rem' }} onClick={() => onSelect(model.Id)}>
       <Card.Body>
@@ -38,7 +68,10 @@ function ModelCard({ onSelect, model }) {
           style={{ display: 'flex', justifyContent: 'space-between' }}
         >
           {model.Name}
-          <IconDownload></IconDownload>
+          <IconDownload 
+            style={{ cursor: 'pointer' }} 
+            onClick={handleFolderSelect}
+          />
         </Card.Title>
         <Card.Subtitle className="mb-2">
           {abbreviateAddress(model.Id, 6)}
@@ -61,35 +94,24 @@ function ModelCard({ onSelect, model }) {
   );
 }
 
-function ModelsTable({ history, setSelectedModel }: any) {
-  const [models] = useState<any[]>([
-    {
-      Id: '0x0557d796a4490cb847efa225c610e56921e1aee2cefcd6e3577c5d470b5bbf80',
-      IpfsCID:
-        '0x0000000000000000000000000000697066733a2f2f6970667361646472657373',
-      Fee: 100,
-      Stake: 100,
-      Owner: '0xb4b12a69fdbb70b31214d4d3c063752c186ff8de',
-      Name: 'Llama 3.0',
-      Tags: ['llama', 'llm', 'chat'],
-      Timestamp: 1715336698,
-      IsDeleted: false,
-    },
-  ]);
 
+function  ModelsTable({
+  setSelectedModel,
+  models,
+  client,
+  openSelectDownloadFolder,
+  downloadModelFromIpfs,
+  toasts,
+} : any) {
   const onSelect = (id) => {
     setSelectedModel(models.find((x) => x.Id == id));
   };
 
-  return (
-    <Container>
-      {models.length
-        ? models.map((x) => (
-            <div key={x.Id}>{ModelCard({ onSelect, model: x })}</div>
-          ))
-        : null}
-    </Container>
-  );
+  return (<Container>
+     {
+      models.length ? models.map((x => (<div>{ModelCard({ onSelect, model: x, openSelectDownloadFolder, downloadModelFromIpfs, toasts })}</div>))) : null
+     }
+    </Container>)
 }
 
-export default withModelsState(ModelsTable);
+export default ModelsTable;

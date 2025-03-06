@@ -34,9 +34,21 @@ const listeners = {
   'delete-chat-history': handlers.deleteChatHistory,
   'update-chat-history-title': handlers.updateChatHistoryTitle,
   // Failover
-  'get-failover-setting': handlers.isFailoverEnabled,
-  'set-failover-setting': handlers.setFailoverSetting,
-  'check-provider-connectivity': handlers.checkProviderConnectivity,
+  "get-failover-setting": handlers.isFailoverEnabled,
+  "set-failover-setting": handlers.setFailoverSetting,
+  "check-provider-connectivity": handlers.checkProviderConnectivity,
+
+  // IPFS
+  "get-ipfs-version": handlers.getIpfsVersion,
+  "get-ipfs-file": handlers.getIpfsFile,
+  "pin-ipfs-file": handlers.pinIpfsFile,
+  "unpin-ipfs-file": handlers.unpinIpfsFile,
+  "add-file-to-ipfs": handlers.addFileToIpfs,
+  "get-ipfs-pinned-files": handlers.getIpfsPinnedFiles,
+  
+  "open-select-folder-dialog": handlers.openSelectFolderDialog,
+
+  // Agent
   'get-agent-users': handlers.getAgentUsers,
   'confirm-decline-agent-user': handlers.confirmDeclineAgentUser,
   'remove-agent-user': handlers.removeAgentUser,
