@@ -6,7 +6,7 @@ import (
 )
 
 type AllowanceRes struct {
-	Allowance *lib.BigInt `json:"allowance" example:"100000000"`
+	Allowance *lib.BigInt `json:"allowance" example:"100000000" swaggertype:"integer"`
 }
 
 type TxRes struct {
@@ -54,8 +54,8 @@ type ModelsRes struct {
 }
 
 type TokenBalanceRes struct {
-	MOR *lib.BigInt `json:"mor" example:"100000000"`
-	ETH *lib.BigInt `json:"eth" example:"100000000"`
+	MOR *lib.BigInt `json:"mor" example:"100000000" swaggertype:"integer"`
+	ETH *lib.BigInt `json:"eth" example:"100000000" swaggertype:"integer"`
 }
 
 type TransactionsRes struct {
@@ -71,11 +71,11 @@ type SessionsRes struct {
 }
 
 type BudgetRes struct {
-	Budget *lib.BigInt `json:"budget" example:"100000000"`
+	Budget *lib.BigInt `json:"budget" example:"100000000" swaggertype:"integer"`
 }
 
 type SupplyRes struct {
-	Supply *lib.BigInt `json:"supply" example:"100000000"`
+	Supply *lib.BigInt `json:"supply" example:"100000000" swaggertype:"integer"`
 }
 
 type BlockRes struct {

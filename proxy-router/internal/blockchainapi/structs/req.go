@@ -30,15 +30,15 @@ type PathEthAddrID struct {
 }
 
 type QueryOffsetLimitOrder struct {
-	Offset lib.BigInt `form:"offset,default=0" binding:"omitempty" validate:"number,gte=0" example:"0"`
-	Limit  uint8      `form:"limit,default=10" binding:"omitempty" validate:"number,gte=1" example:"10"`
-	Order  string     `form:"order,default=asc" binding:"omitempty" validate:"oneof=asc desc" example:"asc"`
+	Offset lib.BigInt `form:"offset,default=0" binding:"omitempty" validate:"number,gte=0" example:"0" swaggertype:"integer"`
+	Limit  uint8       `form:"limit,default=10" binding:"omitempty" validate:"number,gte=1" example:"10"`
+	Order  string      `form:"order,default=asc" binding:"omitempty" validate:"oneof=asc desc" example:"asc"`
 }
 
 type QueryOffsetLimitOrderNoDefault struct {
-	Offset lib.BigInt `form:"offset,default=0" binding:"omitempty" validate:"number,gte=0" example:"0"`
-	Limit  uint8      `form:"limit,default=0" binding:"omitempty" validate:"number,gte=1" example:"10"`
-	Order  string     `form:"order,default=asc" binding:"omitempty" validate:"oneof=asc desc" example:"asc"`
+	Offset lib.BigInt `form:"offset,default=0" binding:"omitempty" validate:"number,gte=0" example:"0" swaggertype:"integer"`
+	Limit  uint8       `form:"limit,default=0" binding:"omitempty" validate:"number,gte=1" example:"10"`
+	Order  string      `form:"order,default=asc" binding:"omitempty" validate:"oneof=asc desc" example:"asc"`
 }
 
 type QueryPageLimit struct {

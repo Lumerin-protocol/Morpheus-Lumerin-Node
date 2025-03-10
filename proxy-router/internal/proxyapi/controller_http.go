@@ -31,9 +31,11 @@ type ProxyController struct {
 	forwardChatContext bool
 	log                lib.ILogger
 	authConfig         system.HTTPAuthConfig
+	ipfsManager        *IpfsManager
 }
 
 func NewProxyController(service *ProxyServiceSender, aiEngine AIEngine, chatStorage genericchatstorage.ChatStorageInterface, storeChatContext, forwardChatContext bool, authConfig system.HTTPAuthConfig, log lib.ILogger) *ProxyController {
+	ipfsManager := NewIpfsManager()
 	c := &ProxyController{
 		service:            service,
 		aiEngine:           aiEngine,
@@ -42,6 +44,7 @@ func NewProxyController(service *ProxyServiceSender, aiEngine AIEngine, chatStor
 		forwardChatContext: forwardChatContext,
 		log:                log,
 		authConfig:         authConfig,
+		ipfsManager:        ipfsManager,
 	}
 
 	return c
@@ -56,6 +59,13 @@ func (s *ProxyController) RegisterRoutes(r interfaces.Router) {
 	r.GET("/v1/chats/:id", s.authConfig.CheckAuth("get_chat_history"), s.GetChat)
 	r.DELETE("/v1/chats/:id", s.authConfig.CheckAuth("edit_chat_history"), s.DeleteChat)
 	r.POST("/v1/chats/:id", s.authConfig.CheckAuth("edit_chat_history"), s.UpdateChatTitle)
+
+	r.POST("/ipfs/pin", s.authConfig.CheckAuth("ipfs_pin"), s.Pin)
+	r.POST("/ipfs/unpin", s.authConfig.CheckAuth("ipfs_unpin"), s.Unpin)
+	r.POST("/ipfs/download/:cid", s.authConfig.CheckAuth("ipfs_get"), s.DownloadFile)
+	r.POST("/ipfs/add", s.authConfig.CheckAuth("ipfs_add"), s.AddFile)
+	r.GET("/ipfs/version", s.authConfig.CheckAuth("ipfs_version"), s.GetIpfsVersion)
+	r.GET("/ipfs/pin", s.authConfig.CheckAuth("ipfs_pinned"), s.GetPinnedFiles)
 }
 
 // Ping godoc
@@ -305,4 +315,191 @@ func (c *ProxyController) UpdateChatTitle(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"result": true})
+}
+
+// Pin godoc
+//
+//	@Summary	Pin a file to IPFS
+//	@Tags		ipfs
+//	@Produce	json
+//	@Param		cid	body		proxyapi.CIDReq	true	"CID"
+//	@Success	200	{object}	proxyapi.ResultResponse
+//	@Security	BasicAuth
+//	@Router		/ipfs/pin [post]
+func (c *ProxyController) Pin(ctx *gin.Context) {
+	var req struct {
+		CID lib.Hash `json:"cid"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	CID, err := lib.ManualBytes32ToCID(req.CID.Bytes())
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err = c.ipfsManager.Pin(ctx, CID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"result": true})
+}
+
+// Unpin godoc
+//
+//	@Summary	Unpin a file from IPFS
+//	@Tags		ipfs
+//	@Produce	json
+//	@Param		cid	body		proxyapi.CIDReq	true	"CID"
+//	@Success	200	{object}	proxyapi.ResultResponse
+//	@Security	BasicAuth
+//	@Router		/ipfs/unpin [post]
+func (c *ProxyController) Unpin(ctx *gin.Context) {
+	var req struct {
+		CID lib.Hash `json:"cid"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	CID, err := lib.ManualBytes32ToCID(req.CID.Bytes())
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = c.ipfsManager.Unpin(ctx, CID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"result": true})
+}
+
+// DownloadFile godoc
+//
+//	@Summary	Download a file from IPFS
+//	@Tags		ipfs
+//	@Produce	json
+//	@Param		cid	path		string	true	"CID"
+//	@Success	200	{object}	proxyapi.ResultResponse
+//	@Security	BasicAuth
+//	@Router		/ipfs/download/{cid} [post]
+func (c *ProxyController) DownloadFile(ctx *gin.Context) {
+	var params struct {
+		CID lib.Hash `uri:"cid" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var req struct {
+		DestinationPath string `json:"destinationPath"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	CID, err := lib.ManualBytes32ToCID(params.CID.Bytes())
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = c.ipfsManager.GetFile(ctx, CID, req.DestinationPath)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"result": true})
+}
+
+// AddFile godoc
+//
+//	@Summary	Add a file to IPFS
+//	@Tags		ipfs
+//	@Produce	json
+//	@Param		filePath	body		proxyapi.AddFileReq	true	"File Path"
+//	@Success	200			{object}	proxyapi.AddIpfsFileRes
+//	@Security	BasicAuth
+//	@Router		/ipfs/add [post]
+func (c *ProxyController) AddFile(ctx *gin.Context) {
+	var req struct {
+		FilePath string `json:"filePath"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cid, err := c.ipfsManager.AddFile(ctx, req.FilePath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	cidHash, err := lib.CIDToBytes32(cid)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	hash := lib.HexString(cidHash)
+	ctx.JSON(http.StatusOK, AddIpfsFileRes{CID: cid, Hash: hash})
+}
+
+// GetIpfsVersion godoc
+//
+//	@Summary	Get IPFS Version
+//	@Tags		ipfs
+//	@Produce	json
+//	@Success	200	{object}	proxyapi.IpfsVersionRes
+//	@Security	BasicAuth
+//	@Router		/ipfs/version [get]
+func (c *ProxyController) GetIpfsVersion(ctx *gin.Context) {
+	version, err := c.ipfsManager.GetVersion(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, IpfsVersionRes{Version: version})
+}
+
+// GetPinnedFiles godoc
+//
+//	@Summary	Get all pinned files
+//	@Tags		ipfs
+//	@Produce	json
+//	@Success	200	{object}	proxyapi.IpfsPinnedFilesRes
+//	@Security	BasicAuth
+//	@Router		/ipfs/pin [get]
+func (c *ProxyController) GetPinnedFiles(ctx *gin.Context) {
+	files, err := c.ipfsManager.GetPinnedFiles(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	filesWithHashes := make([]IpfsPinnedFile, len(files))
+	for i, file := range files {
+		cidBytes, err := lib.CIDToBytes32(file)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		hash := lib.HexString(cidBytes)
+		filesWithHashes[i] = IpfsPinnedFile{CID: file, Hash: hash}
+	}
+	ctx.JSON(http.StatusOK, IpfsPinnedFilesRes{Files: filesWithHashes})
 }

@@ -57,3 +57,29 @@ type ChatCompletionRequestSwaggerExample struct {
 		Content string `json:"content" example:"tell me a joke"`
 	} `json:"messages"`
 }
+
+type CIDReq struct {
+	CID lib.Hash `json:"cid" validate:"required,hex32"`
+}
+
+type AddFileReq struct {
+	FilePath string `json:"filePath" validate:"required"`
+}
+
+type AddIpfsFileRes struct {
+	Hash lib.HexString `json:"hash" validate:"required,hex32" swaggertype:"string"`
+	CID  string        `json:"cid" validate:"required"`
+}
+
+type IpfsVersionRes struct {
+	Version string `json:"version" validate:"required"`
+}
+
+type IpfsPinnedFile struct {
+	CID  string        `json:"cid" validate:"required"`
+	Hash lib.HexString `json:"hash" validate:"required" swaggertype:"string"`
+}
+
+type IpfsPinnedFilesRes struct {
+	Files []IpfsPinnedFile `json:"files" validate:"required"`
+}

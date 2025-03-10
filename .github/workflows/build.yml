@@ -67,6 +67,10 @@ env:
   MODEL_OWNER: TheBloke
   MODEL_REPO: TinyLlama-1.1B-Chat-v1.0-GGUF  
   MODEL_NAME: tinyllama-1.1b-chat-v1.0.Q2_K.gguf
+  KUBO_URL: https://github.com/ipfs/kubo/releases/download/v0.30.0
+  KUBO_FILE_LINUX: kubo_v0.30.0_linux-amd64.tar.gz
+  KUBO_FILE_MAC: kubo_v0.30.0_darwin-amd64.tar.gz
+  KUBO_FILE_WIN: kubo_v0.30.0_windows-amd64.zip
   #tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
 
   
@@ -245,6 +249,7 @@ jobs:
           BUILDTAG=${{ needs.Generate-Tag.outputs.tag_name }}
           FULLTAG=${{ needs.Generate-Tag.outputs.vfull }}
           echo "Artifact: mor-launch-$BUILDTAG-$OS_NAME.zip"
+          wget -nv ${{ env.KUBO_URL }}/${{ env.KUBO_FILE_MAC }}
           cat <<EOF > mor-launch.json
           {
             "llama_url": "${{ env.LLAMA_URL }}",
@@ -257,15 +262,17 @@ jobs:
             "run": [
               "./llama-server --no-webui -m ./{model_name}",
               "./proxy-router",
-              "./MorpheusUI.app/Contents/MacOS/MorpheusUI"
+              "./MorpheusUI.app/Contents/MacOS/MorpheusUI",
+              "./ipfs daemon --init"
             ]
           }
           EOF
           echo "############# Contents of mor-launch.json: ############# "
           cat mor-launch.json
           mv ./cli/mor-cli mor-cli
+          tar xzf ${{ env.KUBO_FILE_MAC }} --strip-components=1 kubo/ipfs
           unzip ./ui-desktop/dist/morpheus-ui-$FULLTAG-arm64-mac.zip
-          zip -j mor-launch-$BUILDTAG-$OS_NAME.zip ./LICENSE ./launcher/mor-launch ./proxy-router/proxy-router .env mor-launch.json models-config.json rating-config.json mor-cli
+          zip -j mor-launch-$BUILDTAG-$OS_NAME.zip ./LICENSE ./launcher/mor-launch ./proxy-router/proxy-router .env mor-launch.json models-config.json rating-config.json mor-cli ipfs
           zip -r mor-launch-$BUILDTAG-$OS_NAME.zip 'MorpheusUI.app'
 
       - name: Upload artifacts
@@ -345,6 +352,7 @@ jobs:
           BUILDTAG=${{ needs.Generate-Tag.outputs.tag_name }}
           FULLTAG=${{ needs.Generate-Tag.outputs.vfull }}
           echo "Artifact: mor-launch-$BUILDTAG-$OS_NAME.zip"
+          wget -nv ${{ env.KUBO_URL }}/${{ env.KUBO_FILE_LINUX }}
           cat <<EOF > mor-launch.json
           {
             "llama_url": "${{ env.LLAMA_URL }}",
@@ -357,14 +365,16 @@ jobs:
             "run": [
               "./llama-server --no-webui -m ./{model_name}",
               "./proxy-router",
-              "./morpheus-ui-'$FULLTAG'-x86_64-linux.AppImage"
+              "./morpheus-ui-'$FULLTAG'-x86_64-linux.AppImage",
+              "./ipfs daemon --init"
             ]
           }
           EOF
           echo "############# Contents of mor-launch.json: ############# "
           cat mor-launch.json
           mv ./cli/mor-cli mor-cli
-          zip -j mor-launch-$BUILDTAG-$OS_NAME.zip ./LICENSE ./launcher/mor-launch ./proxy-router/proxy-router .env mor-launch.json ./ui-desktop/dist/morpheus-ui-$FULLTAG-x86_64-linux.AppImage models-config.json rating-config.json mor-cli
+          tar xzf ${{ env.KUBO_FILE_LINUX }} --strip-components=1 kubo/ipfs
+          zip -j mor-launch-$BUILDTAG-$OS_NAME.zip ./LICENSE ./launcher/mor-launch ./proxy-router/proxy-router .env mor-launch.json ./ui-desktop/dist/morpheus-ui-$FULLTAG-x86_64-linux.AppImage models-config.json rating-config.json mor-cli ipfs
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -444,6 +454,7 @@ jobs:
           BUILDTAG=${{ needs.Generate-Tag.outputs.tag_name }}
           FULLTAG=${{ needs.Generate-Tag.outputs.vfull }}
           echo "Artifact: mor-launch-$BUILDTAG-$OS_NAME.zip"
+          wget -nv ${{ env.KUBO_URL }}/${{ env.KUBO_FILE_MAC }}
           cat <<EOF > mor-launch.json
           {
             "llama_url": "${{ env.LLAMA_URL }}",
@@ -456,7 +467,8 @@ jobs:
             "run": [
               "./llama-server --no-webui -m ./{model_name}",
               "./proxy-router",
-              "./MorpheusUI.app/Contents/MacOS/MorpheusUI"
+              "./MorpheusUI.app/Contents/MacOS/MorpheusUI",
+              "./ipfs daemon --init"
             ]
           }
           EOF
@@ -464,7 +476,8 @@ jobs:
           cat mor-launch.json
           mv ./cli/mor-cli mor-cli
           unzip ./ui-desktop/dist/morpheus-ui-$FULLTAG-x64-mac.zip
-          zip -j mor-launch-$BUILDTAG-$OS_NAME.zip ./LICENSE ./launcher/mor-launch ./proxy-router/proxy-router .env mor-launch.json models-config.json rating-config.json mor-cli
+          tar xzf ${{ env.KUBO_FILE_MAC }} --strip-components=1 kubo/ipfs
+          zip -j mor-launch-$BUILDTAG-$OS_NAME.zip ./LICENSE ./launcher/mor-launch ./proxy-router/proxy-router .env mor-launch.json models-config.json rating-config.json mor-cli ipfs
           zip -r mor-launch-$BUILDTAG-$OS_NAME.zip 'MorpheusUI.app'
 
       - name: Upload artifacts
@@ -549,6 +562,7 @@ jobs:
           BUILDTAG=${{ needs.Generate-Tag.outputs.tag_name }}
           FULLTAG=${{ needs.Generate-Tag.outputs.vfull }}    
           echo "Artifact: mor-launch-$BUILDTAG-$OS_NAME.zip"
+          wget -nv ${{ env.KUBO_URL }}/${{ env.KUBO_FILE_WIN }}
           cat <<EOF > mor-launch.json
           {
             "llama_url": "${{ env.LLAMA_URL }}",
@@ -561,6 +575,7 @@ jobs:
             "run": [
               "./llama-server.exe --no-webui -m ./{model_name}",
               "./proxy-router.exe",
+              "./ipfs.exe daemon --init"
               "./morpheus-ui-$FULLTAG-x64-win.exe"
             ]
           }
@@ -571,7 +586,8 @@ jobs:
           mv ./cli/mor-cli mor-cli.exe
           mv ./launcher/mor-launch mor-launch.exe
           mv "./ui-desktop/dist/morpheus-ui-$FULLTAG-x64-win" morpheus-ui-$FULLTAG-x64-win.exe
-          7z a mor-launch-$BUILDTAG-$OS_NAME.zip LICENSE mor-launch.exe proxy-router.exe .env mor-launch.json morpheus-ui-$FULLTAG-x64-win.exe models-config.json rating-config.json mor-cli.exe
+          unzip -o -j ${{ env.KUBO_FILE_WIN }} kubo/ipfs.exe
+          7z a mor-launch-$BUILDTAG-$OS_NAME.zip LICENSE mor-launch.exe proxy-router.exe .env mor-launch.json morpheus-ui-$FULLTAG-x64-win.exe models-config.json rating-config.json mor-cli.exe ipfs.exe
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

@@ -642,9 +642,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -770,9 +770,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -901,9 +901,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -1028,9 +1028,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -1086,9 +1086,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -1273,9 +1273,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -1338,9 +1338,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -1396,9 +1396,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minLength": 0,
-                        "type": "string",
-                        "example": "0",
+                        "minimum": 0,
+                        "type": "integer",
+                        "example": 0,
                         "name": "offset",
                         "in": "query"
                     },
@@ -1688,6 +1688,190 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/system.HealthCheckResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/ipfs/add": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipfs"
+                ],
+                "summary": "Add a file to IPFS",
+                "parameters": [
+                    {
+                        "description": "File Path",
+                        "name": "filePath",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.AddFileReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.AddIpfsFileRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/ipfs/download/{cid}": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipfs"
+                ],
+                "summary": "Download a file from IPFS",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CID",
+                        "name": "cid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.ResultResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/ipfs/pin": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipfs"
+                ],
+                "summary": "Get all pinned files",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.IpfsPinnedFilesRes"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipfs"
+                ],
+                "summary": "Pin a file to IPFS",
+                "parameters": [
+                    {
+                        "description": "CID",
+                        "name": "cid",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.CIDReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.ResultResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/ipfs/unpin": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipfs"
+                ],
+                "summary": "Unpin a file from IPFS",
+                "parameters": [
+                    {
+                        "description": "CID",
+                        "name": "cid",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.CIDReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.ResultResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/ipfs/version": {
+            "get": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipfs"
+                ],
+                "summary": "Get IPFS Version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.IpfsVersionRes"
                         }
                     }
                 }
@@ -2243,7 +2427,7 @@ const docTemplate = `{
                 "allowances": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "string"
+                        "$ref": "#/definitions/lib.BigInt"
                     }
                 },
                 "isConfirmed": {
@@ -2275,7 +2459,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allowance": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "token": {
                     "type": "string"
@@ -2361,7 +2545,7 @@ const docTemplate = `{
                 "allowances": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "string"
+                        "$ref": "#/definitions/lib.BigInt"
                     }
                 },
                 "password": {
@@ -2386,7 +2570,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "allowance": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "token": {
                     "type": "string"
@@ -2572,6 +2756,22 @@ const docTemplate = `{
                 }
             }
         },
+        "lib.BigInt": {
+            "type": "object",
+            "properties": {
+                "big.Int": {
+                    "type": "string"
+                }
+            }
+        },
+        "lib.Hash": {
+            "type": "object",
+            "properties": {
+                "common.Hash": {
+                    "type": "string"
+                }
+            }
+        },
         "morrpcmesssage.SessionRes": {
             "type": "object",
             "required": [
@@ -2584,22 +2784,71 @@ const docTemplate = `{
             ],
             "properties": {
                 "approval": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "approvalSig": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "message": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "signature": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "timestamp": {
                     "type": "integer"
                 },
                 "user": {
                     "type": "string"
+                }
+            }
+        },
+        "proxyapi.AddFileReq": {
+            "type": "object",
+            "required": [
+                "filePath"
+            ],
+            "properties": {
+                "filePath": {
+                    "type": "string"
+                }
+            }
+        },
+        "proxyapi.AddIpfsFileRes": {
+            "type": "object",
+            "required": [
+                "cid",
+                "hash"
+            ],
+            "properties": {
+                "cid": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                }
+            }
+        },
+        "proxyapi.CIDReq": {
+            "type": "object",
+            "required": [
+                "cid"
+            ],
+            "properties": {
+                "cid": {
+                    "$ref": "#/definitions/lib.Hash"
                 }
             }
         },
@@ -2647,9 +2896,49 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "spend": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "proxyapi.IpfsPinnedFile": {
+            "type": "object",
+            "required": [
+                "cid",
+                "hash"
+            ],
+            "properties": {
+                "cid": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                }
+            }
+        },
+        "proxyapi.IpfsPinnedFilesRes": {
+            "type": "object",
+            "required": [
+                "files"
+            ],
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proxyapi.IpfsPinnedFile"
+                    }
+                }
+            }
+        },
+        "proxyapi.IpfsVersionRes": {
+            "type": "object",
+            "required": [
+                "version"
+            ],
+            "properties": {
+                "version": {
                     "type": "string"
                 }
             }
@@ -2700,8 +2989,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allowance": {
-                    "type": "string",
-                    "example": "100000000"
+                    "type": "integer",
+                    "example": 100000000
                 }
             }
         },
@@ -2709,7 +2998,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "balance": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 }
             }
         },
@@ -2717,10 +3006,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "createdAt": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "deletedAt": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "id": {
                     "type": "string"
@@ -2729,10 +3018,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nonce": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "pricePerSecond": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "provider": {
                     "type": "string"
@@ -2771,8 +3060,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "budget": {
-                    "type": "string",
-                    "example": "100000000"
+                    "type": "integer",
+                    "example": 100000000
                 }
             }
         },
@@ -2807,68 +3096,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "pricePerSecond": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 }
             }
         },
         "structs.CreateModelRequest": {
-            "type": "object",
-            "required": [
-                "fee",
-                "ipfsID",
-                "name",
-                "stake",
-                "tags"
-            ],
-            "properties": {
-                "fee": {
-                    "type": "string",
-                    "example": "123000000000"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "0x1234"
-                },
-                "ipfsID": {
-                    "type": "string",
-                    "example": "0x1234"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 64,
-                    "minLength": 1,
-                    "example": "Llama 2.0"
-                },
-                "stake": {
-                    "type": "string",
-                    "example": "123000000000"
-                },
-                "tags": {
-                    "type": "array",
-                    "maxItems": 64,
-                    "minItems": 1,
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
+            "type": "object"
         },
         "structs.CreateProviderRequest": {
-            "type": "object",
-            "required": [
-                "endpoint",
-                "stake"
-            ],
-            "properties": {
-                "endpoint": {
-                    "type": "string",
-                    "example": "mycoolmornode.domain.com:3989"
-                },
-                "stake": {
-                    "type": "string",
-                    "example": "123000000000"
-                }
-            }
+            "type": "object"
         },
         "structs.InputEntry": {
             "type": "object",
@@ -2963,31 +3199,7 @@ const docTemplate = `{
             }
         },
         "structs.OpenSessionRequest": {
-            "type": "object",
-            "required": [
-                "approval",
-                "approvalSig",
-                "stake"
-            ],
-            "properties": {
-                "approval": {
-                    "type": "string",
-                    "format": "hex",
-                    "example": "0x1234"
-                },
-                "approvalSig": {
-                    "type": "string",
-                    "format": "hex",
-                    "example": "0x1234"
-                },
-                "directPayment": {
-                    "type": "boolean"
-                },
-                "stake": {
-                    "type": "string",
-                    "example": "123000000000"
-                }
-            }
+            "type": "object"
         },
         "structs.OpenSessionRes": {
             "type": "object",
@@ -3002,7 +3214,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "sessionDuration": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 }
             }
         },
@@ -3016,7 +3228,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "sessionDuration": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 }
             }
         },
@@ -3027,7 +3239,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createdAt": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "endpoint": {
                     "type": "string"
@@ -3036,7 +3248,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "stake": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 }
             }
         },
@@ -3092,7 +3304,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "amount": {
-                    "type": "string"
+                    "$ref": "#/definitions/lib.BigInt"
                 },
                 "to": {
                     "type": "string"
@@ -3166,8 +3378,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "supply": {
-                    "type": "string",
-                    "example": "100000000"
+                    "type": "integer",
+                    "example": 100000000
                 }
             }
         },
@@ -3175,12 +3387,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "eth": {
-                    "type": "string",
-                    "example": "100000000"
+                    "type": "integer",
+                    "example": 100000000
                 },
                 "mor": {
-                    "type": "string",
-                    "example": "100000000"
+                    "type": "integer",
+                    "example": 100000000
                 }
             }
         },

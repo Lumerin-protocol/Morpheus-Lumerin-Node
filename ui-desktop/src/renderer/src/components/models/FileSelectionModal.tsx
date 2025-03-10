@@ -25,13 +25,40 @@ const RowContainer = styled.div`
     margin-bottom: 1rem;
   `
 
-const FileSelectionModal = ({ isActive, handleClose }) => {
+const FileSelectionModal = ({ isActive, handleClose, addFileToIpfs, pinFile, toasts }) => {
 
     if (!isActive) {
         return <></>;
     }
 
     const [files, setFiles] = useState<any>([]);
+
+    const onPinModel = async () => {
+        try {
+            const response = await addFileToIpfs(files[0].path);
+            if (response) {
+                await pinFile(response.hash).then((res) => {
+                    if (res.result) {
+                        handleClose();
+                        toasts.toast("success", "Model pinned successfully");
+                    } else {
+                        handleClose();
+                        toasts.toast("error", "Failed to pin model");
+                    }
+                }).catch(() => {
+                    handleClose();
+                    toasts.toast("error", "Failed to pin model");
+                });
+            } else {
+                handleClose();
+                toasts.toast("error", "Failed to pin model");
+            }
+        } catch (error) {
+            handleClose();
+            toasts.toast("error", "Failed to pin model");
+            console.error("Error", error);
+        }
+    }
 
     return (
         <Modal
@@ -41,15 +68,15 @@ const FileSelectionModal = ({ isActive, handleClose }) => {
             bodyProps={bodyProps}
         >
             <TitleWrapper>
-                <Title>Select Files</Title>
+                <Title>Select File</Title>
             </TitleWrapper>
 
-            <Sp mt={2}>
+            {/* <Sp mt={2}>
                 <Form.Group controlId="formFile" className="mb-3">
                     <Form.Label>Set desired model name</Form.Label>
                     <Form.Control type="text" />
                 </Form.Group>
-            </Sp>
+            </Sp> */}
             <Sp mt={2}>
                 <Form.Group controlId="formFile" className="mb-3">
                     <Form.Label>Select files required to run model (including .gguf)</Form.Label>
@@ -72,8 +99,8 @@ const FileSelectionModal = ({ isActive, handleClose }) => {
                     )
             }
 
-            <Sp mt={2} style={{ dispay: 'flex', justifyContent: 'center'}}>
-                <RightBtn>Pin Model Files</RightBtn>
+            <Sp mt={2} style={{ dispay: 'flex', justifyContent: 'center' }}>
+                <RightBtn onClick={onPinModel}>Pin Model Files</RightBtn>
             </Sp>
 
         </Modal>

@@ -18,6 +18,7 @@ The purpose of this software is to enable interaction with distributed, decentra
 manages secure sessions between consumers and providers and routes prompts and responses between them
 * Lumerin `MorpheusUI` is the front end UI to interact with LLMs and the Morpheus network via the proxy-router as a consumer
 * Lumerin `cli` is the cli client to interact with LLMs and the Morpheus network via the proxy-router as a consumer
+* Kubo `ipfs` is the ipfs client to interact with the ipfs network to store and retrieve model/agent files
 
 ## Tokens and Contract Information (update 11/15/2024)
 ### MainNet: (MAIN Branch and MAIN-* Releases)
