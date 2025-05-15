@@ -418,26 +418,34 @@ jobs:
       - name: Copy Environment Files
         uses: ./.github/actions/copy_env_files
 
-      - name: Build
-        id: build
+      - name: Build, Sign, and Package
         run: |
           FULLTAG=${{ needs.Generate-Tag.outputs.vfull }}
           cd ./ui-desktop
           echo "Injecting version $FULLTAG into package.json"
           sed -i "" "s/\"version\": \".*\"/\"version\": \"$FULLTAG\"/" package.json
           cat package.json | grep '"version"'  # Optional: Verify the change
-          yarn build:mac-arm64
 
-      - name: Sign app with ad hoc identity
-        run: |
-          cd ./ui-desktop && codesign --deep --force --sign - ./dist/mac-arm64/MorpheusUI.app
+          # Build unpackaged .app only
+          yarn build:unpack
+
+          # Clean old signature if present (optional but safe)
+          rm -rf ./dist/mac-arm64/MorpheusUI.app/Contents/_CodeSignature
+
+          # Sign app with ad hoc identity
+          codesign --deep --force --sign - ./dist/mac-arm64/MorpheusUI.app
+
+          # Package into DMG
+          hdiutil create -volname MorpheusUI \
+            -srcfolder ./dist/mac-arm64/MorpheusUI.app \
+            -ov -format UDZO ./dist/morpheus-ui-${FULLTAG}-mac-arm64.dmg
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           path: ./ui-desktop/dist/morpheus-ui-${{ needs.Generate-Tag.outputs.vfull }}-mac-arm64.dmg
           name: morpheus-ui-${{ needs.Generate-Tag.outputs.vfull }}-mac-arm64.dmg
-
+            
   UI-Ubuntu-22-x64:
     name: Build Morpheus UI Ubuntu x64 Image
     if: |
